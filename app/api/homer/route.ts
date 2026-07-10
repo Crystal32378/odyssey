@@ -1,160 +1,61 @@
 import { NextResponse } from "next/server";
-import {
-  HomerScene,
-  HomerTransition,
-  TROY_ALLOWED_ACTION_TAGS,
-} from "../../../lib/journey";
+import { getIsland, HomerScene, HomerTransition, ISLANDS, JourneyCard, JourneySummary } from "../../../lib/journey";
 
-const sceneSchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    narrative: { type: "string", maxLength: 150 },
-    question: { type: "string", maxLength: 120 },
-  },
-  required: ["narrative", "question"],
-};
+const sceneSchema = objectSchema({ narrative: { type: "string", maxLength: 150 }, question: { type: "string", maxLength: 120 } });
+const transitionSchema = (tags: readonly string[]) => objectSchema({
+  resolution: { type: "string", maxLength: 120 }, action_tag: { type: "string", enum: tags }, next_narrative: { type: "string", maxLength: 150 }, next_question: { type: "string", maxLength: 120 }, journey_ends: { type: "boolean" },
+});
+const summarySchema = objectSchema({ summary: { type: "string", maxLength: 1400 } });
+const cardSchema = objectSchema({ title: bounded(90), strength: bounded(220), temptation: bounded(220), turningPoint: bounded(280), ithaca: bounded(280), quote: bounded(220) });
 
-const transitionSchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    resolution: { type: "string", maxLength: 120 },
-    action_tag: { type: "string", enum: TROY_ALLOWED_ACTION_TAGS },
-    next_narrative: { type: "string", maxLength: 150 },
-    next_question: { type: "string", maxLength: 120 },
-  },
-  required: ["resolution", "action_tag", "next_narrative", "next_question"],
-};
+function bounded(maxLength: number) { return { type: "string", maxLength }; }
+function objectSchema(properties: Record<string, unknown>) { return { type: "object", additionalProperties: false, properties, required: Object.keys(properties) }; }
+function outputText(data: { output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }> }) { return data.output?.find((item) => item.type === "message")?.content?.find((item) => item.type === "output_text")?.text; }
+function text(value: unknown, max: number): value is string { return typeof value === "string" && value.length > 0 && value.length <= max; }
+function validScene(value: unknown): value is HomerScene { const v = value as Record<string, unknown>; return !!v && Object.keys(v).length === 2 && text(v.narrative, 150) && text(v.question, 120); }
+function validTransition(value: unknown, tags: readonly string[]): value is HomerTransition { const v = value as Record<string, unknown>; return !!v && Object.keys(v).length === 5 && text(v.resolution, 120) && typeof v.action_tag === "string" && tags.includes(v.action_tag) && text(v.next_narrative, 150) && text(v.next_question, 120) && typeof v.journey_ends === "boolean"; }
+function validSummary(value: unknown): value is JourneySummary { const v = value as Record<string, unknown>; return !!v && Object.keys(v).length === 1 && text(v.summary, 1400); }
+function validCard(value: unknown): value is JourneyCard { const v = value as Record<string, unknown>; return !!v && Object.keys(v).length === 6 && text(v.title, 90) && text(v.strength, 220) && text(v.temptation, 220) && text(v.turningPoint, 280) && text(v.ithaca, 280) && text(v.quote, 220); }
 
 const constitution = `You are Homer, the oral poet of Odyssey—not a coach, therapist, personality analyst, or chatbot.
-Preserve the classical world. Troy is ash, bronze, ships, memory, victory, and loss. Never replace myth with modern objects.
-Use only the player's Home Goal, exact words, and recorded timeline as evidence. Never claim hidden motives.
+Preserve the classical world. Never replace myth with modern objects. The player is the hero; you are the witness.
+Use only the Home Goal, exact player words, and timeline as evidence. Never claim hidden motives.
 Write restrained, resonant English suitable for oral recitation. No praise, advice, fortune telling, or motivational language.
-Narrative must be at most 150 characters. Questions must be concise. Return only the strict structured output.`;
-
-function outputText(data: {
-  output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>;
-}) {
-  return data.output
-    ?.find((item) => item.type === "message")
-    ?.content?.find((item) => item.type === "output_text")?.text;
-}
-
-function isBoundedText(value: unknown, maxLength: number): value is string {
-  return typeof value === "string" && value.length > 0 && value.length <= maxLength;
-}
-
-function isHomerScene(value: unknown): value is HomerScene {
-  if (!value || typeof value !== "object") return false;
-  const scene = value as Record<string, unknown>;
-  return (
-    Object.keys(scene).length === 2 &&
-    isBoundedText(scene.narrative, 150) &&
-    isBoundedText(scene.question, 120)
-  );
-}
-
-function isHomerTransition(value: unknown): value is HomerTransition {
-  if (!value || typeof value !== "object") return false;
-  const transition = value as Record<string, unknown>;
-  return (
-    Object.keys(transition).length === 4 &&
-    isBoundedText(transition.resolution, 120) &&
-    typeof transition.action_tag === "string" &&
-    TROY_ALLOWED_ACTION_TAGS.includes(
-      transition.action_tag as (typeof TROY_ALLOWED_ACTION_TAGS)[number],
-    ) &&
-    isBoundedText(transition.next_narrative, 150) &&
-    isBoundedText(transition.next_question, 120)
-  );
-}
+Narratives are at most 150 characters and questions at most 120 characters. Return only strict structured output.`;
 
 export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "HOMER_KEY_MISSING", message: "The sea is silent." },
-      { status: 503 },
-    );
-  }
-
+  if (!apiKey) return NextResponse.json({ error: "HOMER_KEY_MISSING", message: "The sea is silent." }, { status: 503 });
   const body = await request.json();
+  const phase = ["enter", "resolve", "summary", "card"].includes(body?.phase) ? body.phase : "enter";
+  const islandIndex = Number.isInteger(body?.islandIndex) ? body.islandIndex : 0;
+  const current = getIsland(islandIndex) || ISLANDS[0];
+  const next = getIsland(islandIndex + 1);
+  let schema: ReturnType<typeof objectSchema>;
+  let name: string;
+  let instruction: string;
+  let validate: (value: unknown) => boolean;
 
-  const phase = body?.phase === "resolve" ? "resolve" : "enter";
-  const schema = phase === "resolve" ? transitionSchema : sceneSchema;
-  const model = process.env.HOMER_MODEL || "gpt-5.5";
-  const phaseInstruction =
-    phase === "resolve"
-      ? `Resolve Troy from the player's exact answer. Choose exactly one action_tag from: ${TROY_ALLOWED_ACTION_TAGS.join(", ")}.
-UNRESOLVED is required when the words do not support another tag. Do not invent tags.
-Then open Cicones with a new classical narrative and one question. The resolution must visibly echo the player's evidence without diagnosing them.`
-      : "Open the journey at Troy. Transform the Home Goal into a classical metaphor, then ask one answerable question about what the traveler carries from the fallen city.";
+  if (phase === "summary") {
+    schema = summarySchema; name = "journey_summary"; validate = validSummary;
+    instruction = `Write a conclusive journey summary in 140–220 words. Cite at least three different named islands and concrete recorded choices. If ending is Calypso, honor it as a valid ending without pretending Ithaca was reached.`;
+  } else if (phase === "card") {
+    schema = cardSchema; name = "journey_card"; validate = validCard;
+    instruction = `Create a concise Journey Card grounded in the supplied stats, summary, and timeline. Mention at least three islands across the fields. "ithaca" means the traveler's true object of return; for a Calypso ending, clearly preserve that unresolved distance. Return quote as plain text without surrounding quotation marks.`;
+  } else if (phase === "resolve") {
+    schema = transitionSchema(current.allowedActionTags); name = "island_transition"; validate = (v) => validTransition(v, current.allowedActionTags);
+    const endingRule = current.id === "calypso" ? `Set journey_ends true only for STAY_WITH_CALYPSO. Otherwise open ${next?.name}.` : current.id === "ithaca" ? "Set journey_ends true. next_narrative and next_question should form a brief closing threshold." : `Set journey_ends false and open ${next?.name}.`;
+    instruction = `Resolve ${current.name} from the player's exact answer. Mythic ground: ${current.myth}. Choose exactly one action_tag from ${current.allowedActionTags.join(", ")}; use UNRESOLVED if evidence is insufficient. ${endingRule} Echo evidence without diagnosis.`;
+  } else {
+    schema = sceneSchema; name = "island_scene"; validate = validScene;
+    instruction = `Open ${current.name} (${current.epithet}). Mythic ground: ${current.myth}. Transform the Home Goal and recorded journey into a classical metaphor, visibly recalling prior evidence when available, then ask one answerable question.`;
+  }
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      reasoning: { effort: "low" },
-      input: [
-        { role: "system", content: `${constitution}\n${phaseInstruction}` },
-        { role: "user", content: JSON.stringify(body) },
-      ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: phase === "resolve" ? "troy_transition" : "troy_scene",
-          strict: true,
-          schema,
-        },
-      },
-      max_output_tokens: 500,
-    }),
-  });
-
+  const response = await fetch("https://api.openai.com/v1/responses", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ model: process.env.HOMER_MODEL || "gpt-5.5", reasoning: { effort: "low" }, input: [{ role: "system", content: `${constitution}\n${instruction}` }, { role: "user", content: JSON.stringify(body) }], text: { format: { type: "json_schema", name, strict: true, schema } }, max_output_tokens: phase === "summary" || phase === "card" ? 900 : 500 }) });
   const requestId = response.headers.get("x-request-id");
-  if (!response.ok) {
-    const safeError = await response.json().catch(() => ({}));
-    console.error("Homer API failure", {
-      status: response.status,
-      requestId,
-      code: safeError?.error?.code,
-      type: safeError?.error?.type,
-    });
-    return NextResponse.json(
-      {
-        error: "HOMER_UNAVAILABLE",
-        message: "The sea has not answered. Your words are still here.",
-        requestId,
-      },
-      { status: 502 },
-    );
-  }
-
-  const data = await response.json();
-  const raw = outputText(data);
-  if (!raw) {
-    console.error("Homer returned no structured text", { requestId });
-    return NextResponse.json(
-      { error: "HOMER_INVALID_OUTPUT", message: "Homer's voice was lost at sea.", requestId },
-      { status: 502 },
-    );
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    const isValid = phase === "resolve" ? isHomerTransition(parsed) : isHomerScene(parsed);
-    if (!isValid) throw new Error("Structured output failed runtime validation");
-    return NextResponse.json(parsed);
-  } catch {
-    console.error("Homer returned invalid structured output", { requestId });
-    return NextResponse.json(
-      { error: "HOMER_INVALID_OUTPUT", message: "Homer's words arrived broken.", requestId },
-      { status: 502 },
-    );
-  }
+  if (!response.ok) { const safe = await response.json().catch(() => ({})); console.error("Homer API failure", { status: response.status, requestId, code: safe?.error?.code }); return NextResponse.json({ error: "HOMER_UNAVAILABLE", message: "The sea has not answered. Your words are still here.", requestId }, { status: 502 }); }
+  const raw = outputText(await response.json());
+  if (!raw) return NextResponse.json({ error: "HOMER_INVALID_OUTPUT", message: "Homer's voice was lost at sea.", requestId }, { status: 502 });
+  try { const parsed = JSON.parse(raw); if (!validate(parsed)) throw new Error(); return NextResponse.json(parsed); }
+  catch { console.error("Homer returned invalid structured output", { requestId, phase }); return NextResponse.json({ error: "HOMER_INVALID_OUTPUT", message: "Homer's words arrived broken.", requestId }, { status: 502 }); }
 }
