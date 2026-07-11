@@ -1,5 +1,10 @@
-import { NextResponse } from "next/server";
-import { getIsland, HomerScene, HomerTransition, ISLANDS, JourneyCard, JourneySummary } from "../../../lib/journey";
+import { NextResponse } from "next/server.js";
+import { isRateLimited, readJsonWithLimit } from "../../../lib/api-boundary.ts";
+import { cleanPayload } from "../../../lib/homer-payload.ts";
+import { getIsland, ISLANDS } from "../../../lib/journey.ts";
+import type { HomerScene, HomerTransition, JourneyCard, JourneySummary } from "../../../lib/journey.ts";
+
+const HOMER_MAX_BODY_BYTES = 64 * 1024;
 
 const sceneSchema = objectSchema({ narrative: { type: "string", maxLength: 150 }, question: { type: "string", maxLength: 120 } });
 const transitionSchema = (tags: readonly string[]) => objectSchema({
@@ -26,15 +31,19 @@ Narratives are at most 150 characters and questions at most 120 characters. Retu
 export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "HOMER_KEY_MISSING", message: "The sea is silent." }, { status: 503 });
-  const body = await request.json().catch(() => null);
+  if (isRateLimited(request, "homer")) return NextResponse.json({ error: "HOMER_RATE_LIMITED", message: "The sea asks for a brief silence." }, { status: 429 });
+  const parsedBody = await readJsonWithLimit(request, HOMER_MAX_BODY_BYTES);
+  if (!parsedBody.ok) return invalidInput(parsedBody.field, parsedBody.status);
+  const body = parsedBody.value as Record<string, unknown>;
   const phases = ["enter", "resolve", "summary", "card"] as const;
   if (!body || !phases.includes(body.phase)) return invalidInput("phase");
   const phase = body.phase as (typeof phases)[number];
   const islandIndex = body.islandIndex;
   if ((phase === "enter" || phase === "resolve") && (!Number.isInteger(islandIndex) || islandIndex < 0 || islandIndex >= ISLANDS.length)) return invalidInput("islandIndex");
-  if (!validJourneyInput(body, phase)) return invalidInput("journey payload");
-  const current = getIsland(islandIndex ?? 0) || ISLANDS[0];
-  const next = getIsland(islandIndex + 1);
+  const payload = cleanPayload(body, phase);
+  if (!payload) return invalidInput("journey payload");
+  const current = getIsland(payload.phase === "enter" || payload.phase === "resolve" ? payload.islandIndex : 0) || ISLANDS[0];
+  const next = payload.phase === "enter" || payload.phase === "resolve" ? getIsland(payload.islandIndex + 1) : undefined;
   let schema: ReturnType<typeof objectSchema>;
   let name: string;
   let instruction: string;
@@ -55,7 +64,7 @@ export async function POST(request: Request) {
     instruction = `Open ${current.name} (${current.epithet}). Mythic ground: ${current.myth}. Transform the Home Goal and recorded journey into a classical metaphor, visibly recalling prior evidence when available, then ask one answerable question.`;
   }
 
-  const response = await fetch("https://api.openai.com/v1/responses", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ model: process.env.HOMER_MODEL || "gpt-5.5", reasoning: { effort: "low" }, input: [{ role: "system", content: `${constitution}\n${instruction}` }, { role: "user", content: JSON.stringify(body) }], text: { format: { type: "json_schema", name, strict: true, schema } }, max_output_tokens: phase === "summary" || phase === "card" ? 900 : 500 }) });
+  const response = await fetch("https://api.openai.com/v1/responses", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ model: process.env.HOMER_MODEL || "gpt-5.5", reasoning: { effort: "low" }, input: [{ role: "system", content: `${constitution}\n${instruction}` }, { role: "user", content: JSON.stringify(payload) }], text: { format: { type: "json_schema", name, strict: true, schema } }, max_output_tokens: phase === "summary" || phase === "card" ? 900 : 500 }) });
   const requestId = response.headers.get("x-request-id");
   if (!response.ok) { const safe = await response.json().catch(() => ({})); console.error("Homer API failure", { status: response.status, requestId, code: safe?.error?.code }); return NextResponse.json({ error: "HOMER_UNAVAILABLE", message: "The sea has not answered. Your words are still here.", requestId }, { status: 502 }); }
   const raw = outputText(await response.json());
@@ -64,12 +73,4 @@ export async function POST(request: Request) {
   catch { console.error("Homer returned invalid structured output", { requestId, phase }); return NextResponse.json({ error: "HOMER_INVALID_OUTPUT", message: "Homer's words arrived broken.", requestId }, { status: 502 }); }
 }
 
-function invalidInput(field: string) { return NextResponse.json({ error: "HOMER_INPUT_INVALID", message: `Invalid ${field}.` }, { status: 400 }); }
-function validJourneyInput(body: Record<string, unknown>, phase: string) {
-  const homeGoal = phase === "summary" || phase === "card" ? (body.memory as Record<string, unknown> | undefined)?.homeGoal : body.homeGoal;
-  if (typeof homeGoal !== "string" || !homeGoal.trim() || homeGoal.length > 300) return false;
-  if (phase === "resolve" && (typeof body.playerInput !== "string" || !body.playerInput.trim() || body.playerInput.length > 1000)) return false;
-  const timeline = phase === "summary" || phase === "card" ? (body.memory as Record<string, unknown> | undefined)?.timeline : body.timeline;
-  if (!Array.isArray(timeline) || timeline.length > 14) return false;
-  return timeline.every((entry) => entry && typeof entry === "object" && typeof (entry as Record<string, unknown>).quote === "string" && ((entry as Record<string, unknown>).quote as string).length <= 1000);
-}
+function invalidInput(field: string, status = 400) { return NextResponse.json({ error: "HOMER_INPUT_INVALID", message: `Invalid ${field}.` }, { status }); }
