@@ -3,7 +3,7 @@ import { getIsland, HomerScene, HomerTransition, ISLANDS, JourneyCard, JourneySu
 
 const sceneSchema = objectSchema({ narrative: { type: "string", maxLength: 150 }, question: { type: "string", maxLength: 120 } });
 const transitionSchema = (tags: readonly string[]) => objectSchema({
-  resolution: { type: "string", maxLength: 120 }, action_tag: { type: "string", enum: tags }, next_narrative: { type: "string", maxLength: 150 }, next_question: { type: "string", maxLength: 120 }, journey_ends: { type: "boolean" },
+  resolution: { type: "string", maxLength: 120 }, action_tag: { type: "string", enum: tags }, next_narrative: { type: "string", maxLength: 150 }, next_question: { type: "string", maxLength: 120 },
 });
 const summarySchema = objectSchema({ summary: { type: "string", maxLength: 1400 } });
 const cardSchema = objectSchema({ title: bounded(90), strength: bounded(220), temptation: bounded(220), turningPoint: bounded(280), ithaca: bounded(280), quote: bounded(220) });
@@ -13,7 +13,7 @@ function objectSchema(properties: Record<string, unknown>) { return { type: "obj
 function outputText(data: { output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }> }) { return data.output?.find((item) => item.type === "message")?.content?.find((item) => item.type === "output_text")?.text; }
 function text(value: unknown, max: number): value is string { return typeof value === "string" && value.length > 0 && value.length <= max; }
 function validScene(value: unknown): value is HomerScene { const v = value as Record<string, unknown>; return !!v && Object.keys(v).length === 2 && text(v.narrative, 150) && text(v.question, 120); }
-function validTransition(value: unknown, tags: readonly string[]): value is HomerTransition { const v = value as Record<string, unknown>; return !!v && Object.keys(v).length === 5 && text(v.resolution, 120) && typeof v.action_tag === "string" && tags.includes(v.action_tag) && text(v.next_narrative, 150) && text(v.next_question, 120) && typeof v.journey_ends === "boolean"; }
+function validTransition(value: unknown, tags: readonly string[]): value is HomerTransition { const v = value as Record<string, unknown>; return !!v && Object.keys(v).length === 4 && text(v.resolution, 120) && typeof v.action_tag === "string" && tags.includes(v.action_tag) && text(v.next_narrative, 150) && text(v.next_question, 120); }
 function validSummary(value: unknown): value is JourneySummary { const v = value as Record<string, unknown>; return !!v && Object.keys(v).length === 1 && text(v.summary, 1400); }
 function validCard(value: unknown): value is JourneyCard { const v = value as Record<string, unknown>; return !!v && Object.keys(v).length === 6 && text(v.title, 90) && text(v.strength, 220) && text(v.temptation, 220) && text(v.turningPoint, 280) && text(v.ithaca, 280) && text(v.quote, 220); }
 
@@ -26,10 +26,14 @@ Narratives are at most 150 characters and questions at most 120 characters. Retu
 export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "HOMER_KEY_MISSING", message: "The sea is silent." }, { status: 503 });
-  const body = await request.json();
-  const phase = ["enter", "resolve", "summary", "card"].includes(body?.phase) ? body.phase : "enter";
-  const islandIndex = Number.isInteger(body?.islandIndex) ? body.islandIndex : 0;
-  const current = getIsland(islandIndex) || ISLANDS[0];
+  const body = await request.json().catch(() => null);
+  const phases = ["enter", "resolve", "summary", "card"] as const;
+  if (!body || !phases.includes(body.phase)) return invalidInput("phase");
+  const phase = body.phase as (typeof phases)[number];
+  const islandIndex = body.islandIndex;
+  if ((phase === "enter" || phase === "resolve") && (!Number.isInteger(islandIndex) || islandIndex < 0 || islandIndex >= ISLANDS.length)) return invalidInput("islandIndex");
+  if (!validJourneyInput(body, phase)) return invalidInput("journey payload");
+  const current = getIsland(islandIndex ?? 0) || ISLANDS[0];
   const next = getIsland(islandIndex + 1);
   let schema: ReturnType<typeof objectSchema>;
   let name: string;
@@ -44,8 +48,8 @@ export async function POST(request: Request) {
     instruction = `Create a concise Journey Card grounded in the supplied stats, summary, and timeline. Mention at least three islands across the fields. "ithaca" means the traveler's true object of return; for a Calypso ending, clearly preserve that unresolved distance. Return quote as plain text without surrounding quotation marks.`;
   } else if (phase === "resolve") {
     schema = transitionSchema(current.allowedActionTags); name = "island_transition"; validate = (v) => validTransition(v, current.allowedActionTags);
-    const endingRule = current.id === "calypso" ? `Set journey_ends true only for STAY_WITH_CALYPSO. Otherwise open ${next?.name}.` : current.id === "ithaca" ? "Set journey_ends true. next_narrative and next_question should form a brief closing threshold." : `Set journey_ends false and open ${next?.name}.`;
-    instruction = `Resolve ${current.name} from the player's exact answer. Mythic ground: ${current.myth}. Choose exactly one action_tag from ${current.allowedActionTags.join(", ")}; use UNRESOLVED if evidence is insufficient. ${endingRule} Echo evidence without diagnosis.`;
+    const nextContext = next ? `Next shore: ${next.name}\nNext epithet: ${next.epithet}\nNext mythic ground: ${next.myth}` : "This is Ithaca. Write a brief closing threshold in the next fields.";
+    instruction = `Resolve ${current.name} from the player's exact answer. Mythic ground: ${current.myth}. Choose exactly one action_tag from ${current.allowedActionTags.join(", ")}; use UNRESOLVED if evidence is insufficient. Echo evidence without diagnosis. ${nextContext}`;
   } else {
     schema = sceneSchema; name = "island_scene"; validate = validScene;
     instruction = `Open ${current.name} (${current.epithet}). Mythic ground: ${current.myth}. Transform the Home Goal and recorded journey into a classical metaphor, visibly recalling prior evidence when available, then ask one answerable question.`;
@@ -58,4 +62,14 @@ export async function POST(request: Request) {
   if (!raw) return NextResponse.json({ error: "HOMER_INVALID_OUTPUT", message: "Homer's voice was lost at sea.", requestId }, { status: 502 });
   try { const parsed = JSON.parse(raw); if (!validate(parsed)) throw new Error(); return NextResponse.json(parsed); }
   catch { console.error("Homer returned invalid structured output", { requestId, phase }); return NextResponse.json({ error: "HOMER_INVALID_OUTPUT", message: "Homer's words arrived broken.", requestId }, { status: 502 }); }
+}
+
+function invalidInput(field: string) { return NextResponse.json({ error: "HOMER_INPUT_INVALID", message: `Invalid ${field}.` }, { status: 400 }); }
+function validJourneyInput(body: Record<string, unknown>, phase: string) {
+  const homeGoal = phase === "summary" || phase === "card" ? (body.memory as Record<string, unknown> | undefined)?.homeGoal : body.homeGoal;
+  if (typeof homeGoal !== "string" || !homeGoal.trim() || homeGoal.length > 300) return false;
+  if (phase === "resolve" && (typeof body.playerInput !== "string" || !body.playerInput.trim() || body.playerInput.length > 1000)) return false;
+  const timeline = phase === "summary" || phase === "card" ? (body.memory as Record<string, unknown> | undefined)?.timeline : body.timeline;
+  if (!Array.isArray(timeline) || timeline.length > 14) return false;
+  return timeline.every((entry) => entry && typeof entry === "object" && typeof (entry as Record<string, unknown>).quote === "string" && ((entry as Record<string, unknown>).quote as string).length <= 1000);
 }

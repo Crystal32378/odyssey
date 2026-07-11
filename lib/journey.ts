@@ -73,7 +73,7 @@ function island(id: string, name: string, epithet: string, myth: string, statDel
 export interface TimelineEntry { island: string; action: string; quote: string; }
 export interface JourneyMemory { homeGoal: string; stats: JourneyStats; timeline: TimelineEntry[]; currentIsland: number; ending?: "ithaca" | "calypso"; }
 export interface HomerScene { narrative: string; question: string; }
-export interface HomerTransition { resolution: string; action_tag: ActionTag; next_narrative: string; next_question: string; journey_ends: boolean; }
+export interface HomerTransition { resolution: string; action_tag: ActionTag; next_narrative: string; next_question: string; }
 export interface JourneySummary { summary: string; }
 export interface JourneyCard { title: string; strength: string; temptation: string; turningPoint: string; ithaca: string; quote: string; }
 

@@ -24,7 +24,7 @@ export default function Home() {
 
   // Session storage is an external source; this one-time hydration intentionally restores its snapshot.
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { try { const raw = sessionStorage.getItem(SESSION_KEY); if (raw) { const s = JSON.parse(raw) as SavedJourney; setGoal(s.goal || ""); setPhase(s.phase === "loading" ? "island" : s.phase === "resolving" ? "island" : s.phase === "generating_end" ? "ending" : s.phase); setMemory(s.memory); setScene(s.scene); setAnswer(s.answer || ""); setResolution(s.resolution || ""); setSummary(s.summary); setCard(s.card); } } catch { sessionStorage.removeItem(SESSION_KEY); } finally { setHydrated(true); } }, []);
+  useEffect(() => { try { const raw = sessionStorage.getItem(SESSION_KEY); if (raw) { const s = JSON.parse(raw) as SavedJourney; const interruptedEntry = s.phase === "loading" && !s.scene; setGoal(s.goal || ""); setPhase(interruptedEntry ? "map" : s.phase === "loading" || s.phase === "resolving" ? "island" : s.phase === "generating_end" ? "ending" : s.phase); setMemory(interruptedEntry ? null : s.memory); setScene(s.scene); setAnswer(s.answer || ""); setResolution(s.resolution || ""); setSummary(s.summary); setCard(s.card); if (interruptedEntry) setErrorMessage("The first crossing was interrupted. Your Ithaca is preserved; begin again when ready."); } } catch { sessionStorage.removeItem(SESSION_KEY); } finally { setHydrated(true); } }, []);
   useEffect(() => { if (!hydrated || phase === "map") return; sessionStorage.setItem(SESSION_KEY, JSON.stringify({ goal, phase, memory, scene, answer, resolution, summary, card } satisfies SavedJourney)); }, [answer, card, goal, hydrated, memory, phase, resolution, scene, summary]);
   // A changed scene invalidates the browser audio resource and its playback state.
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -36,9 +36,9 @@ export default function Home() {
     const playerInput = answer.trim(); if (!playerInput || !memory || phase === "resolving") return;
     const island = getIsland(memory.currentIsland); if (!island) return; setErrorMessage(""); setPhase("resolving");
     try {
-      const transition = await requestHomer<HomerTransition>({ phase: "resolve", islandIndex: memory.currentIsland, homeGoal: memory.homeGoal, timeline: memory.timeline, playerInput, allowed_action_tags: island.allowedActionTags });
+      const transition = await requestHomer<HomerTransition>({ phase: "resolve", islandIndex: memory.currentIsland, homeGoal: memory.homeGoal, timeline: memory.timeline, playerInput });
       const updated = resolveIsland(memory, island, transition.action_tag, playerInput); setMemory(updated); setResolution(transition.resolution); setAnswer("");
-      if (transition.journey_ends || updated.ending) { setScene({ narrative: transition.next_narrative, question: transition.next_question }); setPhase("ending"); return; }
+      if (updated.ending) { setScene({ narrative: transition.next_narrative, question: transition.next_question }); setPhase("ending"); return; }
       setScene({ narrative: transition.next_narrative, question: transition.next_question }); setPhase("island");
     } catch (e) { setPhase("island"); recordError(e); }
   }
