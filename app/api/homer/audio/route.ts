@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Buffer } from "node:buffer";
 import { request as httpsRequest } from "node:https";
+import { isRateLimited, readJsonWithLimit } from "../../../../lib/api-boundary";
 
 interface SpeechResponse {
   status: number;
@@ -50,7 +51,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "AUDIO_KEY_MISSING" }, { status: 503 });
   }
 
-  const body = await request.json();
+  if (isRateLimited(request)) {
+    return NextResponse.json({ error: "AUDIO_RATE_LIMITED" }, { status: 429 });
+  }
+
+  const parsedBody = await readJsonWithLimit(request, 2_000);
+  if (!parsedBody.ok) {
+    return NextResponse.json({ error: "AUDIO_INPUT_INVALID" }, { status: parsedBody.status });
+  }
+
+  const body = parsedBody.value as Record<string, unknown>;
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text || text.length > 600) {
     return NextResponse.json({ error: "AUDIO_INPUT_INVALID" }, { status: 400 });
