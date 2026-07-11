@@ -17,9 +17,10 @@ test("request bodies over the server limit are rejected before parsing", async (
 
 test("rate limiting blocks repeated requests from the same client", () => {
   resetRateLimitForTests();
-  const request = new Request("http://odyssey.test/api/homer", { headers: { "x-forwarded-for": "203.0.113.7" } });
-  for (let i = 0; i < 30; i += 1) assert.equal(isRateLimited(request, 1_000), false);
-  assert.equal(isRateLimited(request, 1_000), true);
+  const request = new Request("http://odyssey.test/api/homer", { headers: { "cf-connecting-ip": "203.0.113.7" } });
+  for (let i = 0; i < 30; i += 1) assert.equal(isRateLimited(request, "homer", 1_000), false);
+  assert.equal(isRateLimited(request, "homer", 1_000), true);
+  assert.equal(isRateLimited(request, "audio", 1_000), false);
 });
 
 test("Homer payload reconstruction drops untrusted client fields", () => {
