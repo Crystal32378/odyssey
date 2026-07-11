@@ -1,7 +1,10 @@
-import { NextResponse } from "next/server";
-import { isRateLimited, readJsonWithLimit } from "../../../lib/api-boundary";
-import { cleanPayload } from "../../../lib/homer-payload";
-import { getIsland, HomerScene, HomerTransition, ISLANDS, JourneyCard, JourneySummary } from "../../../lib/journey";
+import { NextResponse } from "next/server.js";
+import { isRateLimited, readJsonWithLimit } from "../../../lib/api-boundary.ts";
+import { cleanPayload } from "../../../lib/homer-payload.ts";
+import { getIsland, ISLANDS } from "../../../lib/journey.ts";
+import type { HomerScene, HomerTransition, JourneyCard, JourneySummary } from "../../../lib/journey.ts";
+
+const HOMER_MAX_BODY_BYTES = 64 * 1024;
 
 const sceneSchema = objectSchema({ narrative: { type: "string", maxLength: 150 }, question: { type: "string", maxLength: 120 } });
 const transitionSchema = (tags: readonly string[]) => objectSchema({
@@ -28,8 +31,8 @@ Narratives are at most 150 characters and questions at most 120 characters. Retu
 export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "HOMER_KEY_MISSING", message: "The sea is silent." }, { status: 503 });
-  if (isRateLimited(request)) return NextResponse.json({ error: "HOMER_RATE_LIMITED", message: "The sea asks for a brief silence." }, { status: 429 });
-  const parsedBody = await readJsonWithLimit(request);
+  if (isRateLimited(request, "homer")) return NextResponse.json({ error: "HOMER_RATE_LIMITED", message: "The sea asks for a brief silence." }, { status: 429 });
+  const parsedBody = await readJsonWithLimit(request, HOMER_MAX_BODY_BYTES);
   if (!parsedBody.ok) return invalidInput(parsedBody.field, parsedBody.status);
   const body = parsedBody.value as Record<string, unknown>;
   const phases = ["enter", "resolve", "summary", "card"] as const;
