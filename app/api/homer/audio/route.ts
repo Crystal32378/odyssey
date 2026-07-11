@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server.js";
 import { Buffer } from "node:buffer";
 import { request as httpsRequest } from "node:https";
-import { isRateLimited, readJsonWithLimit } from "../../../../lib/api-boundary";
+import { isRateLimited, readJsonWithLimit } from "../../../../lib/api-boundary.ts";
 
 interface SpeechResponse {
   status: number;
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "AUDIO_KEY_MISSING" }, { status: 503 });
   }
 
-  if (isRateLimited(request)) {
+  if (isRateLimited(request, "audio")) {
     return NextResponse.json({ error: "AUDIO_RATE_LIMITED" }, { status: 429 });
   }
 
