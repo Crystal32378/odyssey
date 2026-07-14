@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import test from "node:test";
+import { ISLAND_ART } from "../lib/island-art.ts";
 import { createJourneyMemory, ISLANDS, resolveIsland, type JourneyMemory, type JourneyStats } from "../lib/journey.ts";
 
 const ORDER = ["troy", "cicones", "lotus", "cyclops", "aeolia", "laestrygonians", "circe", "underworld", "sirens", "scylla", "thrinacia", "calypso", "phaeacia", "ithaca"];
@@ -9,6 +12,19 @@ test("the canonical map has fourteen unique islands in fixed order", () => {
   assert.equal(ISLANDS.length, 14);
   assert.equal(new Set(ISLANDS.map((island) => island.id)).size, 14);
   assert.deepEqual(ISLANDS.map((island) => island.id), ORDER);
+});
+
+test("every canonical island maps to an artwork file", () => {
+  assert.deepEqual(Object.keys(ISLAND_ART).sort(), [...ORDER].sort());
+  for (const island of ISLANDS) {
+    const source = ISLAND_ART[island.id];
+    assert.ok(source, `${island.name} is missing an artwork mapping`);
+    assert.equal(
+      existsSync(join(process.cwd(), "public", source.replace(/^\//, ""))),
+      true,
+      `${island.name} artwork does not exist at ${source}`,
+    );
+  }
 });
 
 test("every island permits UNRESOLVED and only legal stat keys", () => {

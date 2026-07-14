@@ -1,19 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ISLAND_ART } from "../lib/island-art";
 import { createJourneyMemory, getIsland, HomerScene, HomerTransition, ISLANDS, JourneyCard, JourneyMemory, JourneySummary, resolveIsland } from "../lib/journey";
 
 type Phase = "map" | "loading" | "island" | "resolving" | "ending" | "generating_end";
 type AudioStatus = "idle" | "loading" | "ready" | "playing" | "error";
 interface SavedJourney { goal: string; phase: Phase; memory: JourneyMemory | null; scene: HomerScene | null; answer: string; resolution: string; summary: JourneySummary | null; card: JourneyCard | null; }
 const SESSION_KEY = "odyssey.fourteen-islands.v1";
-const ISLAND_ART: Record<string, string> = {
-  troy: "/islands/troy.webp", cicones: "/islands/cicones.webp", "lotus-eaters": "/islands/lotus-eaters.webp",
-  cyclops: "/islands/cyclops.webp", aeolus: "/islands/aeolus.webp", laestrygonians: "/islands/laestrygonians.webp",
-  circe: "/islands/circe.webp", underworld: "/islands/underworld.webp", sirens: "/islands/sirens.webp",
-  "scylla-charybdis": "/islands/scylla-charybdis.webp", "helios-cattle": "/islands/helios-cattle.webp",
-  calypso: "/islands/calypso.webp", phaeacia: "/islands/phaeacia.webp", ithaca: "/islands/ithaca.webp",
-};
 
 async function requestHomer<T>(payload: object): Promise<T> {
   const response = await fetch("/api/homer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });

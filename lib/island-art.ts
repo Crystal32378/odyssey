@@ -1,0 +1,16 @@
+export const ISLAND_ART: Readonly<Record<string, string>> = {
+  troy: "/islands/troy.webp",
+  cicones: "/islands/cicones.webp",
+  lotus: "/islands/lotus-eaters.webp",
+  cyclops: "/islands/cyclops.webp",
+  aeolia: "/islands/aeolus.webp",
+  laestrygonians: "/islands/laestrygonians.webp",
+  circe: "/islands/circe.webp",
+  underworld: "/islands/underworld.webp",
+  sirens: "/islands/sirens.webp",
+  scylla: "/islands/scylla-charybdis.webp",
+  thrinacia: "/islands/helios-cattle.webp",
+  calypso: "/islands/calypso.webp",
+  phaeacia: "/islands/phaeacia.webp",
+  ithaca: "/islands/ithaca.webp",
+};
