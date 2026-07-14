@@ -34,7 +34,7 @@ GPT is not the hero. **GPT is Homer. The player is the hero.**
 
 ## Build Week direction
 
-The submission will demonstrate thoughtful use of GPT and Codex through:
+The submission will demonstrate thoughtful use of GPT-5.6 and Codex through:
 
 - Structured narrative outputs
 - Journey Memory and cross-island continuity
@@ -54,15 +54,21 @@ Final submission claims must be supported by code, commits, pull requests, Codex
 
 ## Current implementation status
 
-A Troy vertical slice has been implemented locally and is awaiting final checkpoint upload into this repository. The slice includes:
+The verified baseline at commit `6f74f9f` includes:
 
-- Home Goal → Troy → player answer → Journey Memory → Cicones
-- Restricted Troy action tags
-- Deterministic engine scoring
-- Structured Output validation
-- Optional `HEAR HOMER`
-- Retry-safe text and audio failures
-- Browser-session recovery
+- a complete fourteen-island journey from Troy to Ithaca
+- deterministic engine-owned progress, action tags, scoring, and endings
+- structured Journey Memory using the player’s exact words
+- strict structured Homer text outputs
+- optional Homer voice playback
+- retry-safe text, audio, and island-image recovery
+- browser-session recovery
+- Ithaca and Calypso endings with Journey Summary and Journey Card
+- responsive desktop and mobile presentation
+- Cloudflare Workers preview deployment
+- 16 automated tests and a passing production build
+
+GPT-5.6 integration, competition-period improvements, and final submission evidence are tracked separately so planned work is not confused with completed functionality.
 
 ## Security
 
