@@ -32,43 +32,70 @@ GPT is not the hero. **GPT is Homer. The player is the hero.**
 13. Phaeacia
 14. Ithaca
 
-## Build Week direction
+## Approved Build Week product scope
 
-The submission will demonstrate thoughtful use of GPT-5.6 and Codex through:
+The Build Week work is organized as three integrated product pillars. These are approved targets, not completed-work claims.
 
-- Structured narrative outputs
-- Journey Memory and cross-island continuity
-- Classical-first mythological guardrails
-- Deterministic state transitions
-- Safe retry and recovery flows
-- Optional AI-generated Homer voice
+### 1. Homer powered by GPT-5.6
+
+- explicit, verifiable GPT-5.6 model configuration
+- strict structured narrative outputs
+- stronger Journey Memory and observable cross-island continuity
+- coordinated text, voice, loading, error, and fallback behavior
+- deterministic engine ownership of progress, scoring, and endings
+
+### 2. Immersive motion
+
+- ship movement along the existing map route
+- staged, full-bleed island arrivals
+- restrained Homer text and voice presentation
+- meaningful motion tied to journey state
+- reduced-motion alternatives
+
+### 3. Visual-first interaction
+
+- existing island artwork becomes the primary stage
+- narrative and controls are layered onto the visual world
+- progressive disclosure reduces simultaneous text and control overload
+- interaction hierarchy remains clear on desktop and mobile
+- the experience is refined without rebuilding the core Engine
+
+Submission readiness, Preview reliability, testing, evidence, and final media are cross-cutting delivery requirements rather than separate product pillars.
 
 ## Build Week evidence
 
-Odyssey existed before OpenAI Build Week. The repository therefore maintains a timestamped record that separates the verified baseline from meaningful work completed during the official submission period.
+Odyssey existed before OpenAI Build Week. The repository therefore maintains a timestamped record that separates the submission-period baseline, boundary maintenance, and meaningful Build Week extensions.
 
 - [Build Week evidence record](docs/build-week-evidence.md)
 - [Canonical evidence tracking issue](https://github.com/Crystal32378/odyssey/issues/9)
 
 Final submission claims must be supported by code, commits, pull requests, Codex session evidence, tests, deployment verification, or demo footage.
 
-## Current implementation status
+## Verified foundation and boundary maintenance
 
-The verified baseline at commit `6f74f9f` includes:
+The submission period began at 2026-07-13 16:00 UTC / 2026-07-14 00:00 Asia/Taipei.
+
+**Submission-period baseline:** `abb29656df7e3ddc08c4bdc6d8eb5edf34bfe5db`
+
+The foundation available at that moment included:
 
 - a complete fourteen-island journey from Troy to Ithaca
 - deterministic engine-owned progress, action tags, scoring, and endings
 - structured Journey Memory using the player’s exact words
 - strict structured Homer text outputs
 - optional Homer voice playback
-- retry-safe text, audio, and island-image recovery
+- retry-safe text and audio flows
 - browser-session recovery
 - Ithaca and Calypso endings with Journey Summary and Journey Card
-- responsive desktop and mobile presentation
-- Cloudflare Workers preview deployment
-- 16 automated tests and a passing production build
+- fourteen-island visual artwork
+- responsive presentation foundation
+- Cloudflare Workers Preview
+- API boundary hardening
+- existing automated tests and production build pipeline
 
-GPT-5.6 integration, competition-period improvements, and final submission evidence are tracked separately so planned work is not confused with completed functionality.
+**Boundary maintenance:** PR #8 was merged at `6f74f9fde53ba53e2483f2168fcd75751a380b7e`, fourteen minutes after the submission period began. It adds transient island-image retry and recovery behavior. It may be cited as Build Week Preview reliability evidence, but not as evidence that Odyssey was meaningfully extended.
+
+GPT-5.6 integration and all three approved product pillars remain target scope until supported by competition-period implementation evidence.
 
 ## Security
 
