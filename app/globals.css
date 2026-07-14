@@ -7,7 +7,8 @@ button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 .landing, .journey, .ending { min-height: 100vh; overflow: hidden; position: relative; }
 .map-world { background: #8ba2a9; isolation: isolate; }
-.map-plane { position: absolute; z-index: -3; top: 50%; left: 50%; width: max(100vw,150vh); aspect-ratio: 3 / 2; transform: translate(-43.5%,-50%); }
+/* Overscan preserves the art-directed horizontal offset without exposing the map-world background. */
+.map-plane { position: absolute; z-index: -3; top: 50%; left: 50%; width: max(116vw,152vh); aspect-ratio: 3 / 2; transform: translate(-43.5%,-50%); }
 .world-map { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; filter: saturate(.72) contrast(1.03) brightness(.98); }
 .map-wash { position: absolute; inset: 0; z-index: -2; pointer-events: none; background: radial-gradient(ellipse at 14% 66%, rgba(245,240,226,.9) 0, rgba(239,234,220,.56) 20%, transparent 39%), linear-gradient(0deg, rgba(10,23,29,.17), transparent 45%, rgba(246,241,229,.14)); }
 .island-layer { position: absolute; inset: 0; }
