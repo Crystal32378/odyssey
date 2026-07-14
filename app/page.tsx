@@ -1,20 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ENDING_REQUEST_TIMEOUT_MS, requestHomer } from "../lib/homer-client";
 import { ISLAND_ART } from "../lib/island-art";
 import { createJourneyMemory, getIsland, HomerScene, HomerTransition, ISLANDS, JourneyCard, JourneyMemory, JourneySummary, resolveIsland } from "../lib/journey";
 
 type Phase = "map" | "loading" | "island" | "resolving" | "ending" | "generating_end";
 type AudioStatus = "idle" | "loading" | "ready" | "playing" | "error";
+type EndingStage = "idle" | "summarizing" | "sealing";
 interface SavedJourney { goal: string; phase: Phase; memory: JourneyMemory | null; scene: HomerScene | null; answer: string; resolution: string; summary: JourneySummary | null; card: JourneyCard | null; }
 const SESSION_KEY = "odyssey.fourteen-islands.v1";
-
-async function requestHomer<T>(payload: object): Promise<T> {
-  const response = await fetch("/api/homer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-  const data = await response.json();
-  if (!response.ok) { const error = new Error(data.message || "The sea has not answered."); Object.assign(error, { requestId: data.requestId }); throw error; }
-  return data as T;
-}
 
 export default function Home() {
   const [goal, setGoal] = useState(""); const [phase, setPhase] = useState<Phase>("map"); const [memory, setMemory] = useState<JourneyMemory | null>(null);
@@ -22,6 +17,7 @@ export default function Home() {
   const [summary, setSummary] = useState<JourneySummary | null>(null); const [card, setCard] = useState<JourneyCard | null>(null);
   const [errorMessage, setErrorMessage] = useState(""); const [requestId, setRequestId] = useState(""); const [hydrated, setHydrated] = useState(false);
   const [audioStatus, setAudioStatus] = useState<AudioStatus>("idle"); const audioRef = useRef<HTMLAudioElement | null>(null); const audioUrlRef = useRef<string | null>(null);
+  const [endingStage, setEndingStage] = useState<EndingStage>("idle");
 
   // Session storage is an external source; this one-time hydration intentionally restores its snapshot.
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -43,13 +39,22 @@ export default function Home() {
       setScene({ narrative: transition.next_narrative, question: transition.next_question }); setPhase("island");
     } catch (e) { setPhase("island"); recordError(e); }
   }
-  async function generateEnding() { if (!memory || phase === "generating_end") return; setErrorMessage(""); setPhase("generating_end"); try { const nextSummary = summary || await requestHomer<JourneySummary>({ phase: "summary", memory }); setSummary(nextSummary); const nextCard = await requestHomer<JourneyCard>({ phase: "card", memory, summary: nextSummary.summary }); setCard(nextCard); setPhase("ending"); } catch (e) { setPhase("ending"); recordError(e); } }
+  async function generateEnding() {
+    if (!memory || phase === "generating_end") return;
+    setErrorMessage(""); setRequestId(""); setEndingStage(summary ? "sealing" : "summarizing"); setPhase("generating_end");
+    try {
+      const nextSummary = summary || await requestHomer<JourneySummary>({ phase: "summary", memory }, { timeoutMs: ENDING_REQUEST_TIMEOUT_MS });
+      setSummary(nextSummary); setEndingStage("sealing");
+      const nextCard = await requestHomer<JourneyCard>({ phase: "card", memory, summary: nextSummary.summary }, { timeoutMs: ENDING_REQUEST_TIMEOUT_MS });
+      setCard(nextCard); setEndingStage("idle"); setPhase("ending");
+    } catch (e) { setEndingStage("idle"); setPhase("ending"); recordError(e); }
+  }
   async function hearHomer() { if (!scene || audioStatus === "loading") return; if (audioStatus === "playing" && audioRef.current) { audioRef.current.pause(); setAudioStatus("ready"); return; } if (audioStatus === "ready" && audioRef.current) { try { await audioRef.current.play(); setAudioStatus("playing"); } catch { setAudioStatus("error"); } return; } setAudioStatus("loading"); try { const response = await fetch("/api/homer/audio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: `${scene.narrative} ${scene.question}` }) }); if (!response.ok) throw new Error(); const url = URL.createObjectURL(await response.blob()); audioUrlRef.current = url; const audio = new Audio(url); audioRef.current = audio; audio.onended = () => setAudioStatus("ready"); audio.onerror = () => setAudioStatus("error"); await audio.play(); setAudioStatus("playing"); } catch { setAudioStatus("error"); } }
-  function resetJourney() { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); sessionStorage.removeItem(SESSION_KEY); setGoal(""); setPhase("map"); setMemory(null); setScene(null); setAnswer(""); setResolution(""); setSummary(null); setCard(null); setErrorMessage(""); setRequestId(""); }
+  function resetJourney() { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); sessionStorage.removeItem(SESSION_KEY); setGoal(""); setPhase("map"); setMemory(null); setScene(null); setAnswer(""); setResolution(""); setSummary(null); setCard(null); setEndingStage("idle"); setErrorMessage(""); setRequestId(""); }
 
   if (phase === "map") return <Map goal={goal} setGoal={setGoal} begin={beginJourney} error={errorMessage} />;
   if (!memory || !scene || phase === "loading") return <main className="journey voyage-loading"><p className="eyebrow">THE FIRST SHORE</p><h1>The map remembers your name.</h1><p>Homer gathers the words of your return.</p></main>;
-  if (memory.ending) return <Ending memory={memory} scene={scene} summary={summary} card={card} phase={phase} generate={generateEnding} reset={resetJourney} error={errorMessage} />;
+  if (memory.ending) return <Ending memory={memory} scene={scene} summary={summary} card={card} phase={phase} stage={endingStage} generate={generateEnding} reset={resetJourney} error={errorMessage} />;
 
   const island = getIsland(memory.currentIsland); const index = memory.currentIsland;
   return <main className="journey"><header className="journey-top"><span className="brand">ODYSSEY <small>返鄉之旅</small></span><span className="goal-label">RETURNING TO <b>{memory.homeGoal}</b></span><span className="island-count">{String(index + 1).padStart(2, "0")} / 14</span></header><div className="progress"><span style={{ width: `${((index + 1) / 14) * 100}%` }} /></div><section className="island-layout" key={island.id}><IslandArtwork islandId={island.id} name={island.name} epithet={island.epithet} index={index}/><article className="narrative"><p className="eyebrow">ISLAND {String(index + 1).padStart(2, "0")} · {island.name.toUpperCase()}</p><h1>{island.name}</h1>{resolution && <p className="resolution">THE SEA REMEMBERS · {resolution}</p>}<p className="story" aria-live="polite">{scene.narrative}</p><AudioButton status={audioStatus} play={hearHomer}/><p className="island-question">{scene.question}</p><label className="answer-label" htmlFor="answer">THE TRAVELER SPEAKS</label><textarea id="answer" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Leave a few words for the sea…" disabled={phase === "resolving"}/><div className="journey-actions"><button className="answer-shore" onClick={resolveAnswer} disabled={phase === "resolving" || !answer.trim()}>{phase === "resolving" ? "THE SEA REMEMBERS…" : island.id === "ithaca" ? "COMPLETE THE RETURN" : "ANSWER THE SHORE"}</button>{errorMessage && <ErrorBox message={errorMessage} requestId={requestId} retry={resolveAnswer}/>}<button className="new-voyage" onClick={resetJourney}>START A NEW JOURNEY</button></div></article></section></main>;
@@ -71,4 +76,90 @@ function IslandArtwork({ islandId, name, epithet, index }: { islandId: string; n
 function Map({ goal, setGoal, begin, error }: { goal: string; setGoal: (v: string) => void; begin: () => void; error: string }) { return <main className="landing map-world"><div className="map-plane"><img className="world-map" src="/odyssey-map.png" alt="The fourteen shores of the Aegean world"/><div className="island-layer" aria-hidden="true">{ISLANDS.map((island, i) => <button type="button" key={island.id} className={`island-node node-${i + 1}${i === 0 ? " is-start" : ""}`}><b>{island.name.toUpperCase()}</b></button>)}<span className="ship-token"/></div></div><div className="map-wash"/><header className="world-title"><span>ODYSSEY</span><i>✦　返 鄉 之 旅　✦</i></header><section className="world-entry"><h1>What are you trying to return to?</h1><p>Fourteen islands.<br/>One question at every shore.<br/><em>The map never changes. You will.</em></p><div className="world-form"><input aria-label="Your return goal" value={goal} onChange={(e) => setGoal(e.target.value)} onKeyDown={(e) => e.key === "Enter" && begin()} placeholder="Speak your Ithaca…"/><button onClick={begin}>BEGIN YOUR ODYSSEY <span>→</span></button></div>{error && <p className="map-error" role="alert">{error} <button onClick={begin}>TRY AGAIN</button></p>}</section><footer className="world-mark"><span>14 ISLANDS</span><span>✦</span><span>ONE JOURNEY</span><span>✦</span><span>COUNTLESS TRUTHS</span></footer></main>; }
 function AudioButton({ status, play }: { status: AudioStatus; play: () => void }) { return <div className="homer-audio"><img className="homer-medallion" src="/assets/homer-medallion.webp" alt="" aria-hidden="true"/><div className="homer-audio-controls"><button type="button" onClick={play} disabled={status === "loading"}>{status === "loading" ? "SUMMONING HOMER…" : status === "playing" ? "PAUSE HOMER" : status === "ready" ? "PLAY HOMER" : "HEAR HOMER"}</button><small>Homer’s voice is AI-generated. The written words remain the record.</small>{status === "error" && <p role="alert">His voice was lost at sea. The journey may continue. <button onClick={play}>TRY AGAIN</button></p>}</div></div>; }
 function ErrorBox({ message, requestId, retry }: { message: string; requestId: string; retry: () => void }) { return <div className="journey-error" role="alert"><strong>{message}</strong><span>Your answer has been preserved.</span>{requestId && <small>Sea mark: {requestId}</small>}<button onClick={retry}>TRY THE CROSSING AGAIN</button></div>; }
-function Ending({ memory, scene, summary, card, phase, generate, reset, error }: { memory: JourneyMemory; scene: HomerScene; summary: JourneySummary | null; card: JourneyCard | null; phase: Phase; generate: () => void; reset: () => void; error: string }) { const calypso = memory.ending === "calypso"; const quote = card?.quote.replace(/^[\s"“”']+|[\s"“”']+$/g, ""); return <main className={`ending ending-${memory.ending}`}><div className="ending-intro"><div className="ending-seal">✦</div><p className="eyebrow">{calypso ? "A VALID ENDING · CALYPSO" : "THE RETURN · ITHACA"}</p><h1>{calypso ? "The sea goes on without you." : "Ithaca remembers."}</h1><p className="ending-lede">{scene.narrative}</p>{!card && <button className="restart" onClick={generate} disabled={phase === "generating_end"}>{phase === "generating_end" ? "HOMER GATHERS THE JOURNEY…" : "REVEAL MY JOURNEY"}</button>}{error && <p className="journey-end-error">{error} Your journey remains safe. <button onClick={generate}>TRY AGAIN</button></p>}</div>{summary && <section className="journey-summary"><p className="card-label">JOURNEY SUMMARY</p><p>{summary.summary}</p></section>}{card && <section className="card"><div className="card-heading"><img className="journey-card-crest" src="/assets/journey-card-crest.webp" alt="" aria-hidden="true"/><div><p className="card-label">JOURNEY CARD</p><h2>{card.title}</h2></div></div><dl className="journey-card-fields"><div><dt>STRENGTH</dt><dd>{card.strength}</dd></div><div><dt>TEMPTATION</dt><dd>{card.temptation}</dd></div><div><dt>TURNING POINT</dt><dd>{card.turningPoint}</dd></div><div><dt>TRUE ITHACA</dt><dd>{card.ithaca}</dd></div></dl><blockquote>“{quote}”</blockquote><p className="card-shores">{memory.timeline.length} SHORES · ONE RETURN</p></section>}<p className="timeline-note">{memory.timeline.length} shores recorded · The Journey Memory is intact.</p><button className="restart" onClick={reset}>BEGIN ANOTHER ODYSSEY</button></main>; }
+
+function Ending({ memory, scene, summary, card, phase, stage, generate, reset, error }: { memory: JourneyMemory; scene: HomerScene; summary: JourneySummary | null; card: JourneyCard | null; phase: Phase; stage: EndingStage; generate: () => void; reset: () => void; error: string }) {
+  const calypso = memory.ending === "calypso";
+  const generating = phase === "generating_end";
+  return <main className={`ending ending-${memory.ending}`}>
+    <div className="ending-intro">
+      <div className="ending-seal">✦</div>
+      <p className="eyebrow">{calypso ? "A VALID ENDING · CALYPSO" : "THE RETURN · ITHACA"}</p>
+      <h1>{calypso ? "The sea goes on without you." : "Ithaca remembers."}</h1>
+      <p className="ending-lede">{scene.narrative}</p>
+      {!card && !generating && !error && <button className="restart" onClick={generate}>REVEAL MY JOURNEY</button>}
+      {error && <p className="journey-end-error" role="alert">{error} {summary ? "The Journey Summary is safe; only the card will be retried." : "Your Journey Memory is safe."} <button onClick={generate}>{summary ? "TRY SEALING THE CARD AGAIN" : "TRY GATHERING THE JOURNEY AGAIN"}</button></p>}
+    </div>
+    {generating && <EndingRitual timeline={memory.timeline} stage={stage}/>}
+    {summary && <section className="journey-summary"><p className="card-label">JOURNEY SUMMARY</p><p>{summary.summary}</p></section>}
+    {summary && generating && stage === "sealing" && <JourneyCardForming/>}
+    {card && <JourneyCardResult card={card} shoreCount={memory.timeline.length}/>}
+    <p className="timeline-note">{memory.timeline.length} shores recorded · The Journey Memory is intact.</p>
+    <button className="restart" onClick={reset} disabled={generating}>BEGIN ANOTHER ODYSSEY</button>
+  </main>;
+}
+
+function EndingRitual({ timeline, stage }: { timeline: JourneyMemory["timeline"]; stage: EndingStage }) {
+  const reducedMotion = usePrefersReducedMotion();
+  const lastIndex = Math.max(0, timeline.length - 1);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (!timeline.length) return;
+    if (reducedMotion) {
+      // Reduced motion presents the completed route without timed movement.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveIndex(lastIndex);
+      return;
+    }
+    // A fresh ritual always begins at the first recorded shore.
+    setActiveIndex(0);
+    const timer = setInterval(() => {
+      setActiveIndex((current) => {
+        if (current >= lastIndex) { clearInterval(timer); return current; }
+        return current + 1;
+      });
+    }, 650);
+    return () => clearInterval(timer);
+  }, [lastIndex, reducedMotion, timeline.length]);
+
+  const current = timeline[Math.min(activeIndex, lastIndex)];
+  const sealing = stage === "sealing";
+  return <section className={`ending-ritual ritual-${sealing ? "sealing" : "retracing"}`}>
+    <div className="ritual-heading" role="status">
+      <p className="card-label">{sealing ? "THE JOURNEY IS GATHERED" : "THE SEA REMEMBERS"}</p>
+      <strong>{sealing ? "Homer seals your Journey Card." : `Retracing your ${timeline.length} recorded shores.`}</strong>
+    </div>
+    <ol className="ritual-shores" aria-label={`${timeline.length} recorded shores`}>
+      {timeline.map((entry, index) => <li key={`${entry.island}-${index}`} aria-label={`${index + 1}. ${entry.island}`} className={`${index <= activeIndex ? "is-visited" : ""}${index === activeIndex ? " is-current" : ""}`}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span></li>)}
+    </ol>
+    {current && <p className="ritual-memory" aria-live="off"><span>SHORE {String(activeIndex + 1).padStart(2, "0")} · {current.island.toUpperCase()}</span><q key={activeIndex}>{current.quote}</q></p>}
+  </section>;
+}
+
+function JourneyCardForming() {
+  return <section className="card card-forming" aria-hidden="true">
+    <div className="card-heading"><img className="journey-card-crest" src="/assets/journey-card-crest.webp" alt=""/><div><p className="card-label">JOURNEY CARD</p><h2>The final words are being sealed.</h2></div></div>
+    <div className="forming-fields">{["STRENGTH", "TEMPTATION", "TURNING POINT", "TRUE ITHACA"].map((label) => <div key={label}><span>{label}</span><i/></div>)}</div>
+    <p className="forming-quote">THE SEA HOLDS THE INK UNTIL HOMER’S WORDS ARRIVE.</p>
+  </section>;
+}
+
+function JourneyCardResult({ card, shoreCount }: { card: JourneyCard; shoreCount: number }) {
+  const quote = card.quote.replace(/^[\s"“”']+|[\s"“”']+$/g, "");
+  return <section className="card card-complete">
+    <div className="card-heading"><img className="journey-card-crest" src="/assets/journey-card-crest.webp" alt="" aria-hidden="true"/><div><p className="card-label">JOURNEY CARD</p><h2>{card.title}</h2></div></div>
+    <dl className="journey-card-fields"><div><dt>STRENGTH</dt><dd>{card.strength}</dd></div><div><dt>TEMPTATION</dt><dd>{card.temptation}</dd></div><div><dt>TURNING POINT</dt><dd>{card.turningPoint}</dd></div><div><dt>TRUE ITHACA</dt><dd>{card.ithaca}</dd></div></dl>
+    <blockquote>“{quote}”</blockquote><p className="card-shores">{shoreCount} SHORES · ONE RETURN</p>
+  </section>;
+}
+
+function usePrefersReducedMotion() {
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(query.matches);
+    update(); query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  return reducedMotion;
+}
