@@ -15,6 +15,93 @@ GPT is not the hero. **GPT is Homer. The player is the hero.**
 - Homer mirrors evidence from the journey and never diagnoses, coaches, or predicts.
 - Optional voice lets the player actively choose to hear Homer recite the current passage.
 
+## Public Preview
+
+The current judging Preview is available at:
+
+https://odyssey-preview.crystalys-chang.workers.dev
+
+The Preview is deployed from the active Build Week branch while the Draft PR remains under review. The default `main` branch is not treated as the final judging build until the approved Build Week work is merged.
+
+## Run locally
+
+### Prerequisites
+
+- Node.js 22.13 or newer
+- npm
+- an OpenAI API key with access to the configured text and speech models
+
+### Setup
+
+```bash
+git clone https://github.com/Crystal32378/odyssey.git
+cd odyssey
+npm install
+cp .env.local.example .env.local
+```
+
+Add the local API key to `.env.local`. Never commit that file.
+
+```dotenv
+OPENAI_API_KEY=your_api_key
+HOMER_MODEL=gpt-5.6-sol
+HOMER_AUDIO_MODEL=gpt-4o-mini-tts
+```
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+The terminal prints the local URL when the server is ready.
+
+### Verification commands
+
+| Command | Purpose |
+|---|---|
+| `npm test` | Run the deterministic Engine, API boundary, API route, Homer client, timeout, and asset-mapping tests |
+| `npm run lint` | Run ESLint across the application |
+| `npm run build` | Run the Homer model preflight and create the production Cloudflare build |
+| `npm run deploy:preview` | Build and deploy the Preview-only Worker with authenticated Wrangler credentials |
+
+The checked-in `wrangler.jsonc` names only the Preview Worker. Production and any formal domain require a separate review.
+
+## Environment variables
+
+| Variable | Required | Default | Purpose |
+|---|---|---|---|
+| `OPENAI_API_KEY` | Yes | none | Server-side credential for Homer text and voice requests |
+| `HOMER_MODEL` | No | `gpt-5.6-sol` | Responses API model used for Homer scenes, transitions, summaries, and Journey Cards |
+| `HOMER_AUDIO_MODEL` | No | `gpt-4o-mini-tts` | Speech model used with the locked Onyx voice direction |
+
+Secrets stay server-side. Browser code never receives the OpenAI API key.
+
+## Architecture
+
+Odyssey keeps narrative interpretation separate from deterministic journey authority:
+
+| Area | Responsibility |
+|---|---|
+| `app/page.tsx` | Map, fourteen-shore interaction, ending ritual, Journey Card presentation, and session recovery |
+| `lib/journey.ts` | Fixed island order, allowed action tags, stat changes, progression, and endings |
+| `lib/homer-client.ts` | Browser-to-server Homer requests, timeouts, and safe retry behavior |
+| `app/api/homer/route.ts` | GPT-5.6 Responses API calls, strict JSON Schemas, server-side output validation, and safe errors |
+| `app/api/homer/audio/route.ts` | Optional Homer speech using Onyx and the locked recitation prompt |
+| `lib/api-boundary.ts` and `lib/homer-payload.ts` | Request size limits, rate limits, and sanitized Journey Memory payloads |
+| `worker/index.ts` | Cloudflare Worker entry point and image delivery |
+
+Journey Memory is stored in browser `sessionStorage` so refresh recovery does not create a remote player profile. The server receives only the bounded journey fields needed for the current Homer request. GPT interprets and narrates; `lib/journey.ts` alone decides progress, stats, action tags, and endings.
+
+## OpenAI integration
+
+- Homer text uses the Responses API with the explicit default model `gpt-5.6-sol`.
+- Every phase uses a strict JSON Schema and a second server-side validator.
+- Runtime requests do not silently fall back to another text model.
+- The player timeline preserves exact statements for grounded cross-island Journey Memory.
+- Homer voice remains an optional `gpt-4o-mini-tts` request using Onyx and the established recitation prompt.
+- If text or voice fails, the deterministic journey record remains intact.
+
 ## Fourteen stations
 
 1. Troy
@@ -71,6 +158,20 @@ Odyssey existed before OpenAI Build Week. The repository therefore maintains a t
 
 Final submission claims must be supported by code, commits, pull requests, Codex session evidence, tests, deployment verification, or demo footage.
 
+## How Codex contributed
+
+Codex is used as the principal implementation, testing, and deployment environment rather than only as a code-completion tool. During Build Week it has:
+
+- audited the pre-existing repository and established the timestamped baseline
+- promoted Homer to the explicit `gpt-5.6-sol` model while preserving strict Structured Outputs
+- added assertions that prevent silent model drift and invalid structured responses
+- diagnosed four canonical island-ID-to-artwork mismatches and added full fourteen-island asset coverage
+- implemented and tested the landing-page cover correction and the local-memory Ending Ritual
+- added bounded ending timeouts and a Summary-preserving Card-only retry path
+- run automated tests, lint, production builds, Cloudflare Preview deployments, and desktop/mobile runtime verification
+
+Crystal Chang retains product and art-direction authority, approves scope and merge decisions, and performs the final human journey review. Independent Codex review is recorded after deployment. The detailed division of pre-existing work, Build Week additions, implementation commits, Preview versions, known limitations, and the final `/feedback` Session ID is maintained in the [Build Week evidence record](docs/build-week-evidence.md) and [Issue #9](https://github.com/Crystal32378/odyssey/issues/9).
+
 ## Verified foundation and boundary maintenance
 
 The submission period began at 2026-07-13 16:00 UTC / 2026-07-14 00:00 Asia/Taipei.
@@ -95,11 +196,17 @@ The foundation available at that moment included:
 
 **Boundary maintenance:** PR #8 was merged at `6f74f9fde53ba53e2483f2168fcd75751a380b7e`, fourteen minutes after the submission period began. It adds transient island-image retry and recovery behavior. It may be cited as Build Week Preview reliability evidence, but not as evidence that Odyssey was meaningfully extended.
 
-GPT-5.6 integration and all three approved product pillars remain target scope until supported by competition-period implementation evidence.
+**Current Build Week checkpoint:** Draft PR #12 records the explicit `gpt-5.6-sol` integration, complete island-art mapping, landing cover correction, and Ending Ritual through commit `7d62b51`. Gate 2 passed 20 automated tests, production build, and public desktop/mobile Preview verification. Reduced-motion visual capture, timeout/retry failure capture, and the final ritual art direction remain open acceptance evidence. These are branch-and-Preview claims until the PR is approved and merged.
 
 ## Security
 
 Never commit API keys or local environment files. Keep `.env.local` and all secrets outside version control.
+
+## Licensing
+
+Source code is released under the [MIT License](LICENSE).
+
+Odyssey artwork, maps, image derivatives, crests, medallions, and other narrative visual assets are **not** licensed under MIT. They remain copyright Crystal Chang and are documented in [the visual asset and rights manifest](docs/visual-assets.md). Framework starter assets retain their applicable upstream terms.
 
 ## Product constitution
 

@@ -3,6 +3,35 @@
 This manifest is the source of truth for the `feature/visual-polish` island artwork.
 Original source PNGs remain outside the repository; the application consumes optimized WebP derivatives.
 
+## Rights and provenance
+
+The following provenance statement is supplied and confirmed by Crystal Chang:
+
+- The Odyssey maps, fourteen island scenes, and narrative supporting artwork were created under Crystal Chang's creative direction using GPT-5.6 Sol with Image 2.
+- Crystal selected the compositions, prompts, variants, narrative purpose, and final production assets.
+- Codex assisted with mechanical production work including background removal, alpha-channel repair, WebP conversion, asset mapping, and delivery validation.
+- No third-party stock imagery, logos, or copyrighted music is intentionally included in the Odyssey narrative asset set.
+
+Under the [OpenAI Terms of Use](https://openai.com/policies/terms-of-use/), as between the user and OpenAI and to the extent permitted by applicable law, the user owns the output and OpenAI assigns any right, title, and interest it may have in that output. This manifest records Crystal Chang's project-specific provenance and rights declaration; it does not make a broader claim about copyrightability beyond applicable law.
+
+Copyright and other applicable rights (c) 2026 Crystal Chang, to the extent permitted by applicable law. All rights reserved.
+
+The MIT license at the repository root applies to source code only. It does **not** grant permission to reuse, redistribute, modify, sell, train on, or separately publish the Odyssey maps, island scenes, character art, crests, medallions, or their source files. Their inclusion in this public repository permits inspection and execution of the submitted project, not independent asset reuse.
+
+Framework starter SVGs are not claimed as original Odyssey artwork and retain their applicable upstream terms.
+
+## Provenance register
+
+| Asset group | Repository paths | Creative source | Codex production work | Rights status |
+|---|---|---|---|---|
+| Homepage map and board | `/public/odyssey-map.png`, `/public/odyssey-board.png` | Crystal Chang direction; GPT-5.6 Sol with Image 2 | Web delivery integration and validation | Crystal Chang; all rights reserved |
+| Fourteen island scenes | `/public/islands/*.webp` | Crystal Chang direction; GPT-5.6 Sol with Image 2 | Source selection mapping, WebP delivery, focal-point integration, and validation | Crystal Chang; all rights reserved |
+| Ship token | `/public/assets/ship-token.webp` | Crystal Chang direction; GPT-5.6 Sol with Image 2 | Background removal, alpha repair, WebP conversion, and validation | Crystal Chang; all rights reserved |
+| Journey Card crest | `/public/assets/journey-card-crest.webp` | Crystal Chang direction; GPT-5.6 Sol with Image 2 | Background removal, alpha repair, WebP conversion, and validation | Crystal Chang; all rights reserved |
+| Homer medallion | `/public/assets/homer-medallion.webp` | Crystal Chang direction; GPT-5.6 Sol with Image 2 | Background removal, alpha repair, WebP conversion, and validation | Crystal Chang; all rights reserved |
+| Ino source artwork | Not yet shipped in the repository | Crystal Chang direction; GPT-5.6 Sol with Image 2 | No production derivative shipped yet | Crystal Chang; all rights reserved |
+| Starter SVGs | `/public/favicon.svg`, `/public/file.svg`, `/public/globe.svg`, `/public/window.svg` | Project starter scaffold | None claimed as Odyssey creative work | Applicable upstream terms |
+
 ## Visual systems
 
 - Mortal journey: dark classical narrative paintings, human choices, sea, fire, smoke, dusk, and weathered earth.
