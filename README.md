@@ -43,6 +43,15 @@ The submission will demonstrate thoughtful use of GPT and Codex through:
 - Safe retry and recovery flows
 - Optional AI-generated Homer voice
 
+## Build Week evidence
+
+Odyssey existed before OpenAI Build Week. The repository therefore maintains a timestamped record that separates the verified baseline from meaningful work completed during the official submission period.
+
+- [Build Week evidence record](docs/build-week-evidence.md)
+- [Canonical evidence tracking issue](https://github.com/Crystal32378/odyssey/issues/9)
+
+Final submission claims must be supported by code, commits, pull requests, Codex session evidence, tests, deployment verification, or demo footage.
+
 ## Current implementation status
 
 A Troy vertical slice has been implemented locally and is awaiting final checkpoint upload into this repository. The slice includes:
