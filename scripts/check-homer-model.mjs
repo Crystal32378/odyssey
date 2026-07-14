@@ -66,8 +66,8 @@ if (fs.existsSync(cachePath)) {
   }
 }
 
-const active = process.env.HOMER_MODEL || "gpt-5.5";
-const candidate = process.env.HOMER_MODEL_CANDIDATE || "gpt-5.6-sol";
+const active = process.env.HOMER_MODEL || "gpt-5.6-sol";
+const candidate = process.env.HOMER_MODEL_CANDIDATE || active;
 const fallback = process.env.HOMER_MODEL_FALLBACK || "gpt-5.5";
 const results = [];
 

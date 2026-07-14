@@ -6,16 +6,20 @@ import { POST as audioPost } from "../app/api/homer/audio/route.ts";
 
 const originalFetch = globalThis.fetch;
 const originalApiKey = process.env.OPENAI_API_KEY;
+const originalHomerModel = process.env.HOMER_MODEL;
 
 test.beforeEach(() => {
   resetRateLimitForTests();
   process.env.OPENAI_API_KEY = "test-key";
+  delete process.env.HOMER_MODEL;
 });
 
 test.afterEach(() => {
   globalThis.fetch = originalFetch;
   if (originalApiKey === undefined) delete process.env.OPENAI_API_KEY;
   else process.env.OPENAI_API_KEY = originalApiKey;
+  if (originalHomerModel === undefined) delete process.env.HOMER_MODEL;
+  else process.env.HOMER_MODEL = originalHomerModel;
 });
 
 function request(path: string, body: unknown, ip = "203.0.113.10") {
@@ -78,6 +82,21 @@ test("normal Homer request sends only the allowlisted payload to OpenAI", async 
   const input = upstreamBody?.input as Array<{ role: string; content: string }>;
   const sentPayload = JSON.parse(input.find((item) => item.role === "user")?.content || "null");
   assert.deepEqual(sentPayload, { phase: "enter", islandIndex: 0, homeGoal: "Home", timeline: [] });
+});
+
+test("Homer defaults to gpt-5.6-sol", async () => {
+  let upstreamBody: Record<string, unknown> | undefined;
+  globalThis.fetch = async (_input, init) => {
+    upstreamBody = JSON.parse(String(init?.body));
+    return new Response(JSON.stringify({
+      output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify({ narrative: "The bronze gates fall silent.", question: "What remains after victory?" }) }] }],
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+
+  const response = await homerPost(request("/api/homer", { phase: "enter", islandIndex: 0, homeGoal: "Home", timeline: [] }));
+
+  assert.equal(response.status, 200);
+  assert.equal(upstreamBody?.model, "gpt-5.6-sol");
 });
 
 test("audio route returns 413 for oversized input", async () => {
