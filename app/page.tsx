@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ENDING_REQUEST_TIMEOUT_MS, requestHomer } from "../lib/homer-client";
 import { ISLAND_ART, ISLAND_PRESENTATION } from "../lib/island-art";
 import { createJourneyMemory, getIsland, HomerScene, HomerTransition, ISLANDS, JourneyCard, JourneyMemory, JourneySummary, resolveIsland } from "../lib/journey";
-import { advanceCrossingGate, canBeginCrossing, createCrossingGate, crossingCanSettle, getVoyageLeg, JourneyPhase, recoverJourneyPhase, type CrossingGate, VOYAGE_DURATION_MS } from "../lib/voyage";
+import { advanceCrossingGate, canBeginCrossing, createCrossingGate, crossingCanSettle, getVoyageLeg, JourneyPhase, recoverJourneyPhase, type CrossingGate, VOYAGE_CAMERA_MOBILE_START_SCALE, VOYAGE_CAMERA_START_SCALE, VOYAGE_DURATION_MS } from "../lib/voyage";
 
 type Phase = JourneyPhase;
 type AudioStatus = "idle" | "loading" | "ready" | "playing" | "error";
@@ -21,6 +21,19 @@ interface VoyageState {
   requestId: string;
 }
 const SESSION_KEY = "odyssey.fourteen-islands.v1";
+const VOYAGE_ASSETS = ["/odyssey-map.png", "/assets/ship-token.webp"] as const;
+
+async function decodeVoyageAsset(source: string) {
+  const image = new Image();
+  image.decoding = "async";
+  image.src = source;
+  try {
+    await image.decode();
+  } catch {
+    if (image.complete) return;
+    await new Promise<void>((resolve) => { image.onload = () => resolve(); image.onerror = () => resolve(); });
+  }
+}
 
 export default function Home() {
   const [goal, setGoal] = useState(""); const [phase, setPhase] = useState<Phase>("map"); const [memory, setMemory] = useState<JourneyMemory | null>(null);
@@ -145,24 +158,44 @@ function VoyageOverlay({ crossing, reducedMotion, complete, retry }: { crossing:
   const hasLeg = toIndex === fromIndex + 1; const leg = hasLeg ? getVoyageLeg(fromIndex, toIndex) : null;
   const from = ISLANDS[fromIndex]; const to = ISLANDS[toIndex] || from;
   const copyPosition = fromIndex <= 4 ? "right-top" : fromIndex <= 8 ? "left-bottom" : "left-top";
+  const [motionReady, setMotionReady] = useState(reducedMotion || gate.visualDone);
   const completeRef = useRef(complete); useEffect(() => { completeRef.current = complete; }, [complete]);
-  useEffect(() => { if (gate.visualDone) return; const timer = setTimeout(() => completeRef.current(), reducedMotion ? 0 : VOYAGE_DURATION_MS); return () => clearTimeout(timer); }, [fromIndex, gate.visualDone, reducedMotion, toIndex]);
+  useEffect(() => {
+    if (reducedMotion || gate.visualDone || gate.status === "error") return;
+    let cancelled = false; let firstFrame = 0; let secondFrame = 0;
+    void Promise.all(VOYAGE_ASSETS.map(decodeVoyageAsset)).finally(() => {
+      if (cancelled) return;
+      firstFrame = requestAnimationFrame(() => {
+        secondFrame = requestAnimationFrame(() => { if (!cancelled) setMotionReady(true); });
+      });
+    });
+    return () => { cancelled = true; cancelAnimationFrame(firstFrame); cancelAnimationFrame(secondFrame); };
+  }, [crossing.id, gate.status, gate.visualDone, reducedMotion]);
+  useEffect(() => { if (gate.visualDone || !motionReady) return; const timer = setTimeout(() => completeRef.current(), VOYAGE_DURATION_MS); return () => clearTimeout(timer); }, [crossing.id, gate.visualDone, motionReady]);
   const sailing = !gate.visualDone && gate.status !== "error" && !reducedMotion;
+  const motionActive = sailing && motionReady;
   const waiting = gate.visualDone && gate.status === "pending";
   const failed = gate.status === "error";
-  const mapStyle = { "--voyage-focus-x": leg ? `${leg.from.x}%` : "50%", "--voyage-focus-y": leg ? `${(leg.from.y / 66.67) * 100}%` : "50%" } as CSSProperties;
+  const mapStyle = {
+    "--voyage-active-scale": VOYAGE_CAMERA_START_SCALE,
+    "--voyage-mobile-scale": VOYAGE_CAMERA_MOBILE_START_SCALE,
+    "--voyage-from-x": leg ? `${-leg.from.x}%` : "-50%",
+    "--voyage-from-y": leg ? `${-(leg.from.y / 66.67) * 100}%` : "-50%",
+    "--voyage-focus-x": leg ? `${-leg.focus.x}%` : "-50%",
+    "--voyage-focus-y": leg ? `${-(leg.focus.y / 66.67) * 100}%` : "-50%",
+    ...Object.fromEntries((leg?.motionPoints || []).flatMap((point, index) => [
+      [`--ship-x-${index}`, `${point.x}%`],
+      [`--ship-y-${index}`, `${(point.y / 66.67) * 100}%`],
+    ])),
+  } as CSSProperties;
   return <main className={`voyage-stage voyage-${failed ? "failed" : waiting ? "waiting" : "sailing"}`} aria-label={hasLeg ? `Voyaging from ${from.name} to ${to.name}` : `Gathering the final answer at ${from.name}`}>
-    <div className={`voyage-map-plane${sailing ? " is-sailing" : ""}`} style={mapStyle} aria-hidden="true">
-      <img src="/odyssey-map.png" alt=""/>
-      <svg viewBox="0 0 100 66.67" role="presentation">
-        {leg && <path className="voyage-leg" d={leg.path}/>}
-        {leg && !gate.visualDone && <g className="voyage-vessel">
-          <circle className="voyage-halo" cx="0" cy="0" r="5"/>
-          <image className="voyage-ship" href="/assets/ship-token.webp" x="-5" y="-3.8" width="10" height="7.6"/>
-          <animateMotion dur={`${VOYAGE_DURATION_MS}ms`} path={leg.path} fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.45 0 0.55 1"/>
-        </g>}
-        {leg && gate.visualDone && !failed && <g className="voyage-vessel voyage-vessel-arrived" transform={`translate(${leg.to.x} ${leg.to.y})`}><circle className="voyage-halo" cx="0" cy="0" r="5"/><image className="voyage-ship" href="/assets/ship-token.webp" x="-5" y="-3.8" width="10" height="7.6"/></g>}
+    <div className={`voyage-map-plane${sailing ? motionActive ? " is-sailing" : " is-preparing" : ""}`} style={mapStyle} aria-hidden="true">
+      <img src="/odyssey-map.png" alt="" decoding="async" fetchPriority="high"/>
+      <svg className="voyage-route-layer" viewBox="0 0 100 66.67" role="presentation">
+        {leg && <><path className="voyage-leg-underlay" d={leg.path}/><path className="voyage-leg" d={leg.path}/></>}
       </svg>
+      {leg && !gate.visualDone && <VoyageVessel className={motionActive ? "is-sailing" : "is-preparing"}/>}
+      {leg && gate.visualDone && !failed && <VoyageVessel className="is-arrived"/>}
     </div>
     <div className="voyage-scrim"/>
     <header className="journey-top voyage-top"><span className="brand">ODYSSEY <small>返鄉之旅</small></span><span className="island-count">{String(toIndex + 1).padStart(2, "0")} / 14</span></header>
@@ -175,6 +208,16 @@ function VoyageOverlay({ crossing, reducedMotion, complete, retry }: { crossing:
       {failed && errorMessage && <span className="voyage-error-detail">{errorMessage}</span>}
     </section>
   </main>;
+}
+
+function VoyageVessel({ className }: { className: "is-preparing" | "is-sailing" | "is-arrived" }) {
+  return <div className={`voyage-vessel-motion ${className}`}>
+    <span className="voyage-vessel-marker">
+      <span className="voyage-halo"/>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="voyage-ship" src="/assets/ship-token.webp" alt="" decoding="async"/>
+    </span>
+  </div>;
 }
 
 function IslandArtwork({ islandId, name }: { islandId: string; name: string }) {
@@ -192,7 +235,7 @@ function IslandArtwork({ islandId, name }: { islandId: string; name: string }) {
   return <div className={`island-art island-art-${islandId}`} style={focalStyle}><img src={`${source}${retrySuffix}`} alt={`${name}, the present shore`} decoding="async" fetchPriority="high" onError={retryImage}/><div className="island-art-veil"/></div>;
 }
 
-function Map({ goal, setGoal, begin, error }: { goal: string; setGoal: (v: string) => void; begin: () => void; error: string }) { return <main className="landing map-world"><div className="map-plane"><img className="world-map" src="/odyssey-map.png" alt="The fourteen shores of the Aegean world"/><div className="island-layer" aria-hidden="true">{ISLANDS.map((island, i) => <button type="button" key={island.id} className={`island-node node-${i + 1}${i === 0 ? " is-start" : ""}`}><b>{island.name.toUpperCase()}</b></button>)}<span className="ship-token"/></div></div><div className="map-wash"/><header className="world-title"><span>ODYSSEY</span><i>✦　返 鄉 之 旅　✦</i></header><section className="world-entry"><h1>What are you trying to return to?</h1><p>Fourteen islands.<br/>One question at every shore.<br/><em>The map never changes. You will.</em></p><div className="world-form"><input aria-label="Your return goal" value={goal} onChange={(e) => setGoal(e.target.value)} onKeyDown={(e) => e.key === "Enter" && begin()} placeholder="Speak your Ithaca…"/><button onClick={begin}>BEGIN YOUR ODYSSEY <span>→</span></button></div>{error && <p className="map-error" role="alert">{error} <button onClick={begin}>TRY AGAIN</button></p>}</section><footer className="world-mark"><span>14 ISLANDS</span><span>✦</span><span>ONE JOURNEY</span><span>✦</span><span>COUNTLESS TRUTHS</span></footer></main>; }
+function Map({ goal, setGoal, begin, error }: { goal: string; setGoal: (v: string) => void; begin: () => void; error: string }) { return <main className="landing map-world"><link rel="preload" as="image" href="/assets/ship-token.webp"/><div className="map-plane"><img className="world-map" src="/odyssey-map.png" alt="The fourteen shores of the Aegean world"/><div className="island-layer" aria-hidden="true">{ISLANDS.map((island, i) => <button type="button" key={island.id} className={`island-node node-${i + 1}${i === 0 ? " is-start" : ""}`}><b>{island.name.toUpperCase()}</b></button>)}</div></div><div className="map-wash"/><header className="world-title"><span>ODYSSEY</span><i>✦　返 鄉 之 旅　✦</i></header><section className="world-entry"><h1>What are you trying to return to?</h1><p>Fourteen islands.<br/>One question at every shore.<br/><em>The map never changes. You will.</em></p><div className="world-form"><input aria-label="Your return goal" value={goal} onChange={(e) => setGoal(e.target.value)} onKeyDown={(e) => e.key === "Enter" && begin()} placeholder="Speak your Ithaca…"/><button onClick={begin}>BEGIN YOUR ODYSSEY <span>→</span></button></div>{error && <p className="map-error" role="alert">{error} <button onClick={begin}>TRY AGAIN</button></p>}</section><footer className="world-mark"><span>14 ISLANDS</span><span>✦</span><span>ONE JOURNEY</span><span>✦</span><span>COUNTLESS TRUTHS</span></footer></main>; }
 function AudioButton({ status, play }: { status: AudioStatus; play: () => void }) { return <div className="homer-audio"><img className="homer-medallion" src="/assets/homer-medallion.webp" alt="" aria-hidden="true"/><div className="homer-audio-controls"><button type="button" onClick={play} disabled={status === "loading"}>{status === "loading" ? "SUMMONING HOMER…" : status === "playing" ? "PAUSE HOMER" : status === "ready" ? "PLAY HOMER" : "HEAR HOMER"}</button><small>Homer’s voice is AI-generated. The written words remain the record.</small>{status === "error" && <p role="alert">His voice was lost at sea. The journey may continue. <button onClick={play}>TRY AGAIN</button></p>}</div></div>; }
 function ErrorBox({ message, requestId, retry }: { message: string; requestId: string; retry: () => void }) { return <div className="journey-error" role="alert"><strong>{message}</strong><span>Your answer has been preserved.</span>{requestId && <small>Sea mark: {requestId}</small>}<button onClick={retry}>TRY THE CROSSING AGAIN</button></div>; }
 

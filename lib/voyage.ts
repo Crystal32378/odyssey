@@ -8,7 +8,10 @@ export interface VoyagePoint {
 export interface VoyageLeg {
   from: VoyagePoint;
   to: VoyagePoint;
+  control: VoyagePoint;
+  focus: VoyagePoint;
   path: string;
+  motionPoints: readonly VoyagePoint[];
 }
 
 export type CrossingStatus = "pending" | "resolved" | "error";
@@ -24,6 +27,11 @@ export type CrossingEvent =
   | { type: "api-failed" };
 
 export const VOYAGE_DURATION_MS = 4000;
+export const VOYAGE_CAMERA_START_SCALE = 1.52;
+export const VOYAGE_CAMERA_MOBILE_START_SCALE = 1.62;
+export const VOYAGE_CAMERA_ZOOM_OUT_AT = 70;
+export const VOYAGE_SAFE_MIN_Y = 16;
+export const VOYAGE_MOTION_SAMPLE_COUNT = 11;
 
 // These centers match the fourteen medallions already painted into the landing map.
 export const VOYAGE_POINTS: readonly VoyagePoint[] = [
@@ -34,12 +42,42 @@ export const VOYAGE_POINTS: readonly VoyagePoint[] = [
 ] as const;
 
 export function getVoyageLeg(fromIndex: number, toIndex: number): VoyageLeg {
-  const from = VOYAGE_POINTS[fromIndex];
-  const to = VOYAGE_POINTS[toIndex];
-  if (!from || !to || toIndex !== fromIndex + 1) throw new Error("Voyage legs must connect consecutive canonical shores.");
+  const canonicalFrom = VOYAGE_POINTS[fromIndex];
+  const canonicalTo = VOYAGE_POINTS[toIndex];
+  if (!canonicalFrom || !canonicalTo || toIndex !== fromIndex + 1) throw new Error("Voyage legs must connect consecutive canonical shores.");
+  const from = keepVesselInsideViewport(canonicalFrom);
+  const to = keepVesselInsideViewport(canonicalTo);
   const middleX = (from.x + to.x) / 2;
   const middleY = (from.y + to.y) / 2 - Math.min(3.8, Math.abs(to.x - from.x) * 0.16 + 1.2);
-  return { from, to, path: `M ${from.x} ${from.y} Q ${middleX} ${middleY} ${to.x} ${to.y}` };
+  const control = keepVesselInsideViewport({ x: middleX, y: middleY });
+  const motionPoints = Array.from({ length: VOYAGE_MOTION_SAMPLE_COUNT }, (_, index) => {
+    const progress = index / (VOYAGE_MOTION_SAMPLE_COUNT - 1);
+    return pointOnQuadratic(from, control, to, easeInOut(progress));
+  });
+  return {
+    from,
+    to,
+    control,
+    focus: pointOnQuadratic(from, control, to, 0.52),
+    path: `M ${from.x} ${from.y} Q ${control.x} ${control.y} ${to.x} ${to.y}`,
+    motionPoints,
+  };
+}
+
+function keepVesselInsideViewport(point: VoyagePoint): VoyagePoint {
+  return { x: point.x, y: Math.max(VOYAGE_SAFE_MIN_Y, point.y) };
+}
+
+function pointOnQuadratic(from: VoyagePoint, control: VoyagePoint, to: VoyagePoint, progress: number): VoyagePoint {
+  const inverse = 1 - progress;
+  return {
+    x: inverse * inverse * from.x + 2 * inverse * progress * control.x + progress * progress * to.x,
+    y: inverse * inverse * from.y + 2 * inverse * progress * control.y + progress * progress * to.y,
+  };
+}
+
+function easeInOut(progress: number) {
+  return progress < 0.5 ? 2 * progress * progress : 1 - ((-2 * progress + 2) ** 2) / 2;
 }
 
 export function shouldAnimateVoyage(reducedMotion: boolean) {

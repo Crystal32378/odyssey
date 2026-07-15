@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { advanceCrossingGate, canBeginCrossing, createCrossingGate, crossingCanSettle, getVoyageLeg, recoverJourneyPhase, shouldAnimateVoyage, VOYAGE_DURATION_MS, VOYAGE_POINTS } from "../lib/voyage.ts";
+import { advanceCrossingGate, canBeginCrossing, createCrossingGate, crossingCanSettle, getVoyageLeg, recoverJourneyPhase, shouldAnimateVoyage, VOYAGE_CAMERA_MOBILE_START_SCALE, VOYAGE_CAMERA_START_SCALE, VOYAGE_CAMERA_ZOOM_OUT_AT, VOYAGE_DURATION_MS, VOYAGE_MOTION_SAMPLE_COUNT, VOYAGE_POINTS, VOYAGE_SAFE_MIN_Y } from "../lib/voyage.ts";
 
 test("the presentation route has one point for every canonical shore", () => {
   assert.equal(VOYAGE_POINTS.length, 14);
@@ -13,11 +13,29 @@ test("the presentation route has one point for every canonical shore", () => {
 test("every voyage leg connects consecutive shores", () => {
   for (let index = 0; index < 13; index += 1) {
     const leg = getVoyageLeg(index, index + 1);
-    assert.equal(leg.from, VOYAGE_POINTS[index]);
-    assert.equal(leg.to, VOYAGE_POINTS[index + 1]);
+    assert.equal(leg.from.x, VOYAGE_POINTS[index].x);
+    assert.equal(leg.to.x, VOYAGE_POINTS[index + 1].x);
+    assert.ok(leg.from.y >= VOYAGE_SAFE_MIN_Y);
+    assert.ok(leg.to.y >= VOYAGE_SAFE_MIN_Y);
     assert.match(leg.path, /^M .+ Q .+$/);
+    assert.equal(leg.motionPoints.length, VOYAGE_MOTION_SAMPLE_COUNT);
+    assert.deepEqual(leg.motionPoints[0], leg.from);
+    assert.deepEqual(leg.motionPoints.at(-1), leg.to);
   }
   assert.throws(() => getVoyageLeg(0, 2));
+});
+
+test("the voyage camera begins close and reserves the final passage for zooming out", () => {
+  assert.ok(VOYAGE_CAMERA_START_SCALE >= 1.45 && VOYAGE_CAMERA_START_SCALE <= 1.55);
+  assert.ok(VOYAGE_CAMERA_MOBILE_START_SCALE > VOYAGE_CAMERA_START_SCALE);
+  assert.equal(VOYAGE_CAMERA_ZOOM_OUT_AT, 70);
+});
+
+test("top-edge crossings keep the whole vessel inside the presentation safe zone", () => {
+  for (const [fromIndex, toIndex] of [[4, 5], [5, 6], [6, 7], [12, 13]] as const) {
+    const leg = getVoyageLeg(fromIndex, toIndex);
+    for (const point of leg.motionPoints) assert.ok(point.y >= VOYAGE_SAFE_MIN_Y - 3.8);
+  }
 });
 
 test("voyage motion is restrained and removed for reduced motion", () => {

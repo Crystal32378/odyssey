@@ -18,7 +18,6 @@ button { cursor: pointer; }
 .island-node.is-start { border-color: rgba(170,123,43,.82); box-shadow: 0 0 0 4px rgba(245,226,171,.38),0 0 28px rgba(173,124,40,.5); }
 .island-node.is-start b::before { content: "01 · "; color: #9b6d27; }
 .node-1{left:33.5%;top:72%}.node-2{left:23.4%;top:67.6%}.node-3{left:21.1%;top:51.7%}.node-4{left:27.6%;top:38.5%}.node-5{left:27.2%;top:25.8%}.node-6{left:33.2%;top:9.2%}.node-7{left:53.2%;top:10.2%}.node-8{left:65.8%;top:21.8%}.node-9{left:66.4%;top:36.8%}.node-10{left:72.7%;top:49.6%}.node-11{left:72.7%;top:67.9%}.node-12{left:62.2%;top:73.9%}.node-13{left:55%;top:61.7%}.node-14{left:46%;top:16%}
-.ship-token { position: absolute; left: 45%; top: 43%; width: 12%; height: 18%; visibility: hidden; }
 .world-title { position: absolute; top: 2.8vh; left: 50%; transform: translateX(-50%); display: grid; justify-items: center; color: #15384d; text-shadow: 0 1px 2px rgba(255,255,255,.6); }
 .world-title span { font-size: clamp(3.4rem, 8vw, 9rem); line-height: .8; letter-spacing: .1em; }
 .world-title i { margin-top: 14px; font-style: normal; font-size: .8rem; letter-spacing: .34em; color: #173e55; }
@@ -92,14 +91,21 @@ button { cursor: pointer; }
 .voyage-loading h1 { margin: 16px 0; font-size: clamp(2.5rem, 6vw, 6rem); font-weight: 400; color: #e8dcc2; }
 .voyage-loading > p:last-child { color: #aebcb8; }
 .voyage-stage { min-height: 100vh; position: relative; overflow: hidden; isolation: isolate; background: #8ba2a9; }
-.voyage-map-plane { position: absolute; z-index: -3; top: 50%; left: 50%; width: max(116vw,152vh); aspect-ratio: 3 / 2; transform: translate(-43.5%,-50%) scale(1); transform-origin: var(--voyage-focus-x) var(--voyage-focus-y); }
-.voyage-map-plane.is-sailing { animation: voyage-camera 4s cubic-bezier(.45,0,.55,1) both; }
-.voyage-map-plane > img { position: absolute; inset: 0; width: 100%; height: 100%; filter: saturate(.54) contrast(1.04) brightness(.72); }
-.voyage-map-plane svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.voyage-leg { fill: none; stroke: rgba(235,204,143,.9); stroke-width: .34; stroke-dasharray: 1.1 1.1; filter: drop-shadow(0 0 2px rgba(231,202,143,.5)); }
-.voyage-halo { fill: rgba(222,186,116,.13); stroke: rgba(235,204,143,.48); stroke-width: .18; }
-.voyage-ship { filter: drop-shadow(0 2px 2px rgba(3,12,15,.8)) drop-shadow(0 0 5px rgba(238,214,165,.78)); }
-.voyage-scrim { position: absolute; z-index: -2; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(10,23,29,.08), rgba(8,18,23,.64)), linear-gradient(rgba(7,15,18,.24),rgba(7,15,18,.4)); }
+.voyage-map-plane { position: absolute; z-index: -3; top: 50%; left: 50%; width: max(116vw,152vh); aspect-ratio: 3 / 2; contain: layout paint; transform: scale(1) translate3d(-43.5%,-50%,0); transform-origin: 0 0; backface-visibility: hidden; }
+.voyage-map-plane.is-preparing { transform: scale(var(--voyage-active-scale)) translate3d(var(--voyage-from-x),var(--voyage-from-y),0); }
+.voyage-map-plane.is-sailing { animation: voyage-camera 4s linear both; will-change: transform; }
+.voyage-map-plane > img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.voyage-route-layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+.voyage-leg-underlay, .voyage-leg { fill: none; stroke-linecap: round; }
+.voyage-leg-underlay { stroke: rgba(8,20,25,.52); stroke-width: .82; }
+.voyage-leg { stroke: rgba(235,204,143,.88); stroke-width: .31; stroke-dasharray: 1.1 1.1; }
+.voyage-vessel-motion { position: absolute; inset: 0; transform: translate3d(var(--ship-x-0),var(--ship-y-0),0); pointer-events: none; backface-visibility: hidden; }
+.voyage-vessel-motion.is-sailing { animation: voyage-vessel 4s linear both; will-change: transform; }
+.voyage-vessel-motion.is-arrived { transform: translate3d(var(--ship-x-10),var(--ship-y-10),0); }
+.voyage-vessel-marker { position: absolute; left: 0; top: 0; width: 7.4%; aspect-ratio: 4 / 3; display: grid; place-items: center; transform: translate(-50%,-50%); }
+.voyage-halo { position: absolute; width: 122%; aspect-ratio: 1; border: 1px solid rgba(235,204,143,.48); border-radius: 50%; background: rgba(222,186,116,.13); box-shadow: 0 0 0 1px rgba(8,20,25,.34); }
+.voyage-ship { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; }
+.voyage-scrim { position: absolute; z-index: -2; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(21,38,45,.18), rgba(8,18,23,.7)), linear-gradient(rgba(27,46,53,.34),rgba(7,15,18,.48)); }
 .voyage-top { color: rgba(233,223,198,.72); border-color: rgba(233,223,198,.22); }
 .voyage-copy { position: absolute; width: min(620px,46vw); text-shadow: 0 2px 18px rgba(5,11,13,.9); }
 .voyage-copy-right-top { top: 17vh; right: 5vw; text-align: right; }
@@ -157,7 +163,25 @@ button { cursor: pointer; }
 @keyframes shore-arrival { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes painting-settle { from { opacity: .48; transform: scale(1.045); } to { opacity: 1; transform: scale(1.018); } }
 @keyframes stage-reveal { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-@keyframes voyage-camera { from { transform: translate(-43.5%,-50%) scale(1.2); } to { transform: translate(-43.5%,-50%) scale(1); } }
+@keyframes voyage-camera {
+  0% { transform: scale(var(--voyage-active-scale)) translate3d(var(--voyage-from-x),var(--voyage-from-y),0); animation-timing-function: cubic-bezier(.45,0,.55,1); }
+  58% { transform: scale(var(--voyage-active-scale)) translate3d(var(--voyage-focus-x),var(--voyage-focus-y),0); }
+  70% { transform: scale(1.44) translate3d(var(--voyage-focus-x),var(--voyage-focus-y),0); animation-timing-function: cubic-bezier(.45,0,.55,1); }
+  100% { transform: scale(1) translate3d(-43.5%,-50%,0); }
+}
+@keyframes voyage-vessel {
+  0% { transform: translate3d(var(--ship-x-0),var(--ship-y-0),0); }
+  10% { transform: translate3d(var(--ship-x-1),var(--ship-y-1),0); }
+  20% { transform: translate3d(var(--ship-x-2),var(--ship-y-2),0); }
+  30% { transform: translate3d(var(--ship-x-3),var(--ship-y-3),0); }
+  40% { transform: translate3d(var(--ship-x-4),var(--ship-y-4),0); }
+  50% { transform: translate3d(var(--ship-x-5),var(--ship-y-5),0); }
+  60% { transform: translate3d(var(--ship-x-6),var(--ship-y-6),0); }
+  70% { transform: translate3d(var(--ship-x-7),var(--ship-y-7),0); }
+  80% { transform: translate3d(var(--ship-x-8),var(--ship-y-8),0); }
+  90% { transform: translate3d(var(--ship-x-9),var(--ship-y-9),0); }
+  100% { transform: translate3d(var(--ship-x-10),var(--ship-y-10),0); }
+}
 @keyframes voyage-copy-reveal { from { opacity: .35; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes ending-reveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes card-reveal { from { opacity: 0; transform: translateY(14px) scale(.99); } to { opacity: 1; transform: none; } }
@@ -170,7 +194,7 @@ button { cursor: pointer; }
   .world-title { top: 4vh; }.world-title span { font-size: clamp(2.7rem,15vw,5rem); }.world-title i { margin-top: 8px; font-size: .55rem; }
   .world-entry { left: 6vw; top: auto; bottom: 5vh; width: 88vw; }.world-entry h1 { font-size: clamp(2.2rem,10vw,4.2rem); }.world-entry p { font-size: .86rem; }
   .world-form { gap: 10px; }.world-form button { justify-self: start; }.world-mark, .goal-label, .island-node b { display: none; }
-  .journey-top { padding-inline: 6vw; }.voyage-copy, .voyage-copy-right-top, .voyage-copy-left-bottom, .voyage-copy-left-top { left: 6vw; right: 6vw; top: auto; bottom: 7vh; width: auto; text-align: center; }.voyage-copy h1 { font-size: 3rem; }
+  .journey-top { padding-inline: 6vw; }.voyage-map-plane { --voyage-active-scale: var(--voyage-mobile-scale) !important; }.voyage-copy, .voyage-copy-right-top, .voyage-copy-left-bottom, .voyage-copy-left-top { left: 6vw; right: 6vw; top: auto; bottom: 7vh; width: auto; text-align: center; }.voyage-copy h1 { font-size: 3rem; }
   .island-layout { min-height: auto; display: block; padding: 0; overflow: visible; background: #111012; }
   .island-art { position: relative; z-index: 0; width: 100%; height: min(42vh,360px); min-height: 280px; }
   .island-art img { object-position: var(--focal-mobile); }
@@ -186,4 +210,4 @@ button { cursor: pointer; }
   .ending-ritual { margin-top: 36px; padding-block: 22px; }.ritual-heading { display: grid; gap: 8px; }.ritual-shores { grid-template-columns: repeat(7,minmax(0,1fr)); row-gap: 17px; }.ritual-memory { min-height: 96px; }
   .journey-summary { margin-top: 42px; font-size: .98rem; line-height: 1.72; }.card { margin-top: 38px; padding: 30px 28px; }.card-heading { align-items: flex-start; gap: 14px; }.journey-card-crest { width: 58px; height: 58px; }.journey-card-fields, .forming-fields { grid-template-columns: 1fr; gap: 18px; }.card blockquote { font-size: 1.08rem; }.card-shores { text-align: left; }
 }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }.voyage-map-plane, .voyage-map-plane.is-sailing { animation: none !important; transform: translate(-43.5%,-50%) scale(1); }.voyage-map-plane svg { display: none; }.stage-step { opacity: 1 !important; transform: none !important; animation: none !important; }.ritual-memory q, .card-forming, .forming-fields i { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }.voyage-map-plane, .voyage-map-plane.is-sailing, .voyage-map-plane.is-preparing { animation: none !important; transform: scale(1) translate3d(-43.5%,-50%,0); }.voyage-map-plane svg, .voyage-vessel-motion { display: none; }.stage-step { opacity: 1 !important; transform: none !important; animation: none !important; }.ritual-memory q, .card-forming, .forming-fields i { animation: none !important; } }
