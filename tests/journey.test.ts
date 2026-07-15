@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { ISLAND_ART } from "../lib/island-art.ts";
+import { ISLAND_ART, ISLAND_FOCAL_POINTS } from "../lib/island-art.ts";
 import { createJourneyMemory, ISLANDS, resolveIsland, type JourneyMemory, type JourneyStats } from "../lib/journey.ts";
 
 const ORDER = ["troy", "cicones", "lotus", "cyclops", "aeolia", "laestrygonians", "circe", "underworld", "sirens", "scylla", "thrinacia", "calypso", "phaeacia", "ithaca"];
@@ -24,6 +24,15 @@ test("every canonical island maps to an artwork file", () => {
       true,
       `${island.name} artwork does not exist at ${source}`,
     );
+  }
+});
+
+test("every canonical island protects its focal subject on desktop and mobile", () => {
+  assert.deepEqual(Object.keys(ISLAND_FOCAL_POINTS).sort(), [...ORDER].sort());
+  for (const island of ISLANDS) {
+    const focal = ISLAND_FOCAL_POINTS[island.id];
+    assert.match(focal.desktop, /^\d+% \d+%$/);
+    assert.match(focal.mobile, /^\d+% \d+%$/);
   }
 });
 

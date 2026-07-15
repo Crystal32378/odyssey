@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ENDING_REQUEST_TIMEOUT_MS, requestHomer } from "../lib/homer-client";
-import { ISLAND_ART } from "../lib/island-art";
+import { ISLAND_ART, ISLAND_FOCAL_POINTS } from "../lib/island-art";
 import { createJourneyMemory, getIsland, HomerScene, HomerTransition, ISLANDS, JourneyCard, JourneyMemory, JourneySummary, resolveIsland } from "../lib/journey";
 import { getVoyageLeg, JourneyPhase, recoverJourneyPhase, shouldAnimateVoyage, VOYAGE_DURATION_MS } from "../lib/voyage";
 
@@ -60,25 +60,49 @@ export default function Home() {
 
   if (phase === "map") return <Map goal={goal} setGoal={setGoal} begin={beginJourney} error={errorMessage} />;
   if (!memory || !scene || phase === "loading") return <main className="journey voyage-loading"><p className="eyebrow">THE FIRST SHORE</p><h1>The map remembers your name.</h1><p>Homer gathers the words of your return.</p></main>;
-  if (phase === "voyaging" && voyage) return <VoyageOverlay fromIndex={voyage.fromIndex} toIndex={voyage.toIndex} complete={finishVoyage}/>;
+  if (phase === "voyaging" && voyage) return <VoyageOverlay fromIndex={voyage.fromIndex} toIndex={voyage.toIndex} reducedMotion={reducedMotion} complete={finishVoyage}/>;
   if (memory.ending) return <Ending memory={memory} scene={scene} summary={summary} card={card} phase={phase} stage={endingStage} generate={generateEnding} reset={resetJourney} error={errorMessage} />;
 
   const island = getIsland(memory.currentIsland); const index = memory.currentIsland;
-  return <main className="journey"><header className="journey-top"><span className="brand">ODYSSEY <small>返鄉之旅</small></span><span className="goal-label">RETURNING TO <b>{memory.homeGoal}</b></span><span className="island-count">{String(index + 1).padStart(2, "0")} / 14</span></header><div className="progress"><span style={{ width: `${((index + 1) / 14) * 100}%` }} /></div><section className="island-layout" key={island.id}><IslandArtwork islandId={island.id} name={island.name} epithet={island.epithet} index={index}/><article className="narrative"><p className="eyebrow">ISLAND {String(index + 1).padStart(2, "0")} · {island.name.toUpperCase()}</p><h1>{island.name}</h1>{resolution && <p className="resolution">THE SEA REMEMBERS · {resolution}</p>}<p className="story" aria-live="polite">{scene.narrative}</p><AudioButton status={audioStatus} play={hearHomer}/><p className="island-question">{scene.question}</p><label className="answer-label" htmlFor="answer">THE TRAVELER SPEAKS</label><textarea id="answer" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Leave a few words for the sea…" disabled={phase === "resolving"}/><div className="journey-actions"><button className="answer-shore" onClick={resolveAnswer} disabled={phase === "resolving" || !answer.trim()}>{phase === "resolving" ? "THE SEA REMEMBERS…" : island.id === "ithaca" ? "COMPLETE THE RETURN" : "ANSWER THE SHORE"}</button>{errorMessage && <ErrorBox message={errorMessage} requestId={requestId} retry={resolveAnswer}/>}<button className="new-voyage" onClick={resetJourney}>START A NEW JOURNEY</button></div></article></section></main>;
+  return <main className="journey">
+    <header className="journey-top"><span className="brand">ODYSSEY <small>返鄉之旅</small></span><span className="goal-label">RETURNING TO <b>{memory.homeGoal}</b></span><span className="island-count">{String(index + 1).padStart(2, "0")} / 14</span></header>
+    <div className="progress"><span style={{ width: `${((index + 1) / 14) * 100}%` }} /></div>
+    <section className="island-layout" key={island.id}>
+      <IslandArtwork islandId={island.id} name={island.name}/>
+      <article className="narrative">
+        <div className="arrival-name stage-step stage-step-name"><p className="eyebrow">ISLAND {String(index + 1).padStart(2, "0")} · {island.name.toUpperCase()}</p><h1>{island.name}</h1></div>
+        <p className="stage-epithet stage-step stage-step-epithet">{island.epithet}</p>
+        {resolution && <p className="resolution">THE SEA REMEMBERS · {resolution}</p>}
+        <section className="homer-witness stage-step stage-step-homer" aria-label="Homer bears witness">
+          <p className="homer-cue"><span>HOMER</span> BEARS WITNESS</p>
+          <p className="story" aria-live="polite">{scene.narrative}</p>
+          <AudioButton status={audioStatus} play={hearHomer}/>
+        </section>
+        <p className="island-question stage-step stage-step-question">{scene.question}</p>
+        <div className="response-band stage-step stage-step-response">
+          <label className="answer-label" htmlFor="answer">THE TRAVELER SPEAKS</label>
+          <textarea id="answer" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Leave a few words for the sea…" disabled={phase === "resolving"}/>
+          <div className="journey-actions"><button className="answer-shore" onClick={resolveAnswer} disabled={phase === "resolving" || !answer.trim()}>{phase === "resolving" ? "THE SEA REMEMBERS…" : island.id === "ithaca" ? "COMPLETE THE RETURN" : "ANSWER THE SHORE"}</button>{errorMessage && <ErrorBox message={errorMessage} requestId={requestId} retry={resolveAnswer}/>}<button className="new-voyage" onClick={resetJourney}>START A NEW JOURNEY</button></div>
+        </div>
+      </article>
+    </section>
+  </main>;
 }
 
-function VoyageOverlay({ fromIndex, toIndex, complete }: { fromIndex: number; toIndex: number; complete: () => void }) {
+function VoyageOverlay({ fromIndex, toIndex, reducedMotion, complete }: { fromIndex: number; toIndex: number; reducedMotion: boolean; complete: () => void }) {
   const leg = getVoyageLeg(fromIndex, toIndex);
   const from = ISLANDS[fromIndex]; const to = ISLANDS[toIndex];
-  useEffect(() => { const timer = setTimeout(complete, VOYAGE_DURATION_MS); return () => clearTimeout(timer); }, [complete]);
+  useEffect(() => { const timer = setTimeout(complete, reducedMotion ? 0 : VOYAGE_DURATION_MS); return () => clearTimeout(timer); }, [complete, reducedMotion]);
   return <main className="voyage-stage" aria-label={`Voyaging from ${from.name} to ${to.name}`}>
     <div className="voyage-map-plane" aria-hidden="true">
       <img src="/odyssey-map.png" alt=""/>
       <svg viewBox="0 0 100 66.67" role="presentation">
         <path className="voyage-leg" d={leg.path}/>
-        <image className="voyage-ship" href="/assets/ship-token.webp" x="-3.6" y="-3.6" width="7.2" height="7.2">
+        <g className="voyage-vessel">
+          <circle className="voyage-halo" cx="0" cy="0" r="5"/>
+          <image className="voyage-ship" href="/assets/ship-token.webp" x="-5" y="-3.8" width="10" height="7.6"/>
           <animateMotion dur={`${VOYAGE_DURATION_MS}ms`} path={leg.path} fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.45 0 0.55 1"/>
-        </image>
+        </g>
       </svg>
     </div>
     <div className="voyage-scrim"/>
@@ -87,8 +111,9 @@ function VoyageOverlay({ fromIndex, toIndex, complete }: { fromIndex: number; to
   </main>;
 }
 
-function IslandArtwork({ islandId, name, epithet, index }: { islandId: string; name: string; epithet: string; index: number }) {
+function IslandArtwork({ islandId, name }: { islandId: string; name: string }) {
   const source = ISLAND_ART[islandId];
+  const focal = ISLAND_FOCAL_POINTS[islandId];
   const [attempt, setAttempt] = useState(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (retryTimer.current) clearTimeout(retryTimer.current); }, []);
@@ -97,7 +122,8 @@ function IslandArtwork({ islandId, name, epithet, index }: { islandId: string; n
     retryTimer.current = setTimeout(() => { retryTimer.current = null; setAttempt((value) => value + 1); }, 450);
   }
   const retrySuffix = attempt ? `?retry=${attempt}` : "";
-  return <div className={`island-art island-art-${islandId}`}><img src={`${source}${retrySuffix}`} alt={`${name}, ${epithet}`} decoding="async" fetchPriority="high" onError={retryImage}/><div className="island-art-veil"/><div className="art-overlay"><span>SHORE {String(index + 1).padStart(2, "0")}</span><strong>{epithet}</strong></div></div>;
+  const focalStyle = { "--focal-desktop": focal.desktop, "--focal-mobile": focal.mobile } as CSSProperties;
+  return <div className={`island-art island-art-${islandId}`} style={focalStyle}><img src={`${source}${retrySuffix}`} alt={`${name}, the present shore`} decoding="async" fetchPriority="high" onError={retryImage}/><div className="island-art-veil"/></div>;
 }
 
 function Map({ goal, setGoal, begin, error }: { goal: string; setGoal: (v: string) => void; begin: () => void; error: string }) { return <main className="landing map-world"><div className="map-plane"><img className="world-map" src="/odyssey-map.png" alt="The fourteen shores of the Aegean world"/><div className="island-layer" aria-hidden="true">{ISLANDS.map((island, i) => <button type="button" key={island.id} className={`island-node node-${i + 1}${i === 0 ? " is-start" : ""}`}><b>{island.name.toUpperCase()}</b></button>)}<span className="ship-token"/></div></div><div className="map-wash"/><header className="world-title"><span>ODYSSEY</span><i>✦　返 鄉 之 旅　✦</i></header><section className="world-entry"><h1>What are you trying to return to?</h1><p>Fourteen islands.<br/>One question at every shore.<br/><em>The map never changes. You will.</em></p><div className="world-form"><input aria-label="Your return goal" value={goal} onChange={(e) => setGoal(e.target.value)} onKeyDown={(e) => e.key === "Enter" && begin()} placeholder="Speak your Ithaca…"/><button onClick={begin}>BEGIN YOUR ODYSSEY <span>→</span></button></div>{error && <p className="map-error" role="alert">{error} <button onClick={begin}>TRY AGAIN</button></p>}</section><footer className="world-mark"><span>14 ISLANDS</span><span>✦</span><span>ONE JOURNEY</span><span>✦</span><span>COUNTLESS TRUTHS</span></footer></main>; }
