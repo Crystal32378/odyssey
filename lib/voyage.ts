@@ -32,6 +32,14 @@ export const VOYAGE_CAMERA_MOBILE_START_SCALE = 1.62;
 export const VOYAGE_CAMERA_ZOOM_OUT_AT = 70;
 export const VOYAGE_SAFE_MIN_Y = 16;
 export const VOYAGE_MOTION_SAMPLE_COUNT = 11;
+export const ARRIVAL_REVEAL_DURATION_MS = 400;
+export const ARRIVAL_STAGE_DELAYS_MS = {
+  name: 350,
+  memory: 850,
+  homer: 1300,
+  question: 1800,
+  response: 2300,
+} as const;
 
 // These centers match the fourteen medallions already painted into the landing map.
 export const VOYAGE_POINTS: readonly VoyagePoint[] = [

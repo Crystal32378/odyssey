@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { advanceCrossingGate, canBeginCrossing, createCrossingGate, crossingCanSettle, getVoyageLeg, recoverJourneyPhase, shouldAnimateVoyage, VOYAGE_CAMERA_MOBILE_START_SCALE, VOYAGE_CAMERA_START_SCALE, VOYAGE_CAMERA_ZOOM_OUT_AT, VOYAGE_DURATION_MS, VOYAGE_MOTION_SAMPLE_COUNT, VOYAGE_POINTS, VOYAGE_SAFE_MIN_Y } from "../lib/voyage.ts";
+import { advanceCrossingGate, ARRIVAL_REVEAL_DURATION_MS, ARRIVAL_STAGE_DELAYS_MS, canBeginCrossing, createCrossingGate, crossingCanSettle, getVoyageLeg, recoverJourneyPhase, shouldAnimateVoyage, VOYAGE_CAMERA_MOBILE_START_SCALE, VOYAGE_CAMERA_START_SCALE, VOYAGE_CAMERA_ZOOM_OUT_AT, VOYAGE_DURATION_MS, VOYAGE_MOTION_SAMPLE_COUNT, VOYAGE_POINTS, VOYAGE_SAFE_MIN_Y } from "../lib/voyage.ts";
 
 test("the presentation route has one point for every canonical shore", () => {
   assert.equal(VOYAGE_POINTS.length, 14);
@@ -36,6 +36,13 @@ test("top-edge crossings keep the whole vessel inside the presentation safe zone
     const leg = getVoyageLeg(fromIndex, toIndex);
     for (const point of leg.motionPoints) assert.ok(point.y >= VOYAGE_SAFE_MIN_Y - 3.8);
   }
+});
+
+test("arrival reveals place, name, memory, witness, choice, and response as distinct beats", () => {
+  assert.equal(ARRIVAL_REVEAL_DURATION_MS, 400);
+  assert.deepEqual(Object.values(ARRIVAL_STAGE_DELAYS_MS), [350, 850, 1300, 1800, 2300]);
+  const delays = Object.values(ARRIVAL_STAGE_DELAYS_MS);
+  for (let index = 1; index < delays.length; index += 1) assert.ok(delays[index] - delays[index - 1] >= ARRIVAL_REVEAL_DURATION_MS);
 });
 
 test("voyage motion is restrained and removed for reduced motion", () => {

@@ -59,12 +59,12 @@ button { cursor: pointer; }
 .narrative { width: min(var(--content-width),46vw); min-width: 0; position: relative; z-index: 1; display: grid; grid-template-rows: minmax(108px,auto) minmax(54px,auto) minmax(148px,auto) minmax(70px,auto) minmax(118px,auto); align-content: center; row-gap: clamp(5px,.7vh,10px); padding: 1vh 0; text-shadow: 0 2px 16px rgba(0,0,0,.62); }
 .narrative h1 { max-width: 610px; margin: 9px 0 0; color: #eee4ce; font-size: 4.65rem; line-height: .9; font-weight: 400; text-wrap: balance; }
 .stage-epithet { margin: 10px 0 0; color: #d8c8a8; font-size: 1rem; font-style: italic; letter-spacing: .035em; }
-.stage-step { opacity: 0; animation: stage-reveal .65s ease-out both; }
-.stage-step-name { animation-delay: .8s; }
-.stage-step-memory { animation-delay: 1.5s; }
-.stage-step-homer { animation-delay: 2.2s; }
-.stage-step-question { animation-delay: 3s; }
-.stage-step-response { animation-delay: 3.6s; }
+.stage-step { opacity: 0; animation: stage-reveal var(--arrival-reveal-duration) cubic-bezier(.22,.7,.3,1) both; }
+.stage-step-name { animation-delay: var(--arrival-name-delay); }
+.stage-step-memory { animation-delay: var(--arrival-memory-delay); }
+.stage-step-homer { animation-delay: var(--arrival-homer-delay); }
+.stage-step-question { animation-delay: var(--arrival-question-delay); }
+.stage-step-response { animation-delay: var(--arrival-response-delay); }
 .memory-beat { width: 90%; align-self: center; display: grid; gap: 6px; }
 .memory-beat span { color: var(--gold); font-size: .6rem; letter-spacing: .18em; }
 .memory-beat p { margin: 0; color: #c3ad82; font-size: .72rem; line-height: 1.45; letter-spacing: .07em; text-wrap: pretty; }
@@ -162,7 +162,7 @@ button { cursor: pointer; }
 .ending > .timeline-note { margin: 22px 0 0; }
 @keyframes shore-arrival { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes painting-settle { from { opacity: .48; transform: scale(1.045); } to { opacity: 1; transform: scale(1.018); } }
-@keyframes stage-reveal { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes stage-reveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes voyage-camera {
   0% { transform: scale(var(--voyage-active-scale)) translate3d(var(--voyage-from-x),var(--voyage-from-y),0); animation-timing-function: cubic-bezier(.45,0,.55,1); }
   58% { transform: scale(var(--voyage-active-scale)) translate3d(var(--voyage-focus-x),var(--voyage-focus-y),0); }

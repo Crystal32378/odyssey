@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ENDING_REQUEST_TIMEOUT_MS, requestHomer } from "../lib/homer-client";
 import { ISLAND_ART, ISLAND_PRESENTATION } from "../lib/island-art";
 import { createJourneyMemory, getIsland, HomerScene, HomerTransition, ISLANDS, JourneyCard, JourneyMemory, JourneySummary, resolveIsland } from "../lib/journey";
-import { advanceCrossingGate, canBeginCrossing, createCrossingGate, crossingCanSettle, getVoyageLeg, JourneyPhase, recoverJourneyPhase, type CrossingGate, VOYAGE_CAMERA_MOBILE_START_SCALE, VOYAGE_CAMERA_START_SCALE, VOYAGE_DURATION_MS } from "../lib/voyage";
+import { advanceCrossingGate, ARRIVAL_REVEAL_DURATION_MS, ARRIVAL_STAGE_DELAYS_MS, canBeginCrossing, createCrossingGate, crossingCanSettle, getVoyageLeg, JourneyPhase, recoverJourneyPhase, type CrossingGate, VOYAGE_CAMERA_MOBILE_START_SCALE, VOYAGE_CAMERA_START_SCALE, VOYAGE_DURATION_MS } from "../lib/voyage";
 
 type Phase = JourneyPhase;
 type AudioStatus = "idle" | "loading" | "ready" | "playing" | "error";
@@ -128,7 +128,15 @@ export default function Home() {
   if (memory.ending) return <Ending memory={memory} scene={scene} summary={summary} card={card} phase={phase} stage={endingStage} generate={generateEnding} reset={resetJourney} error={errorMessage} />;
 
   const island = getIsland(memory.currentIsland); const index = memory.currentIsland; const presentation = ISLAND_PRESENTATION[island.id];
-  const presentationStyle = { "--content-width": presentation.contentWidth || "590px" } as CSSProperties;
+  const presentationStyle = {
+    "--content-width": presentation.contentWidth || "590px",
+    "--arrival-reveal-duration": `${ARRIVAL_REVEAL_DURATION_MS}ms`,
+    "--arrival-name-delay": `${ARRIVAL_STAGE_DELAYS_MS.name}ms`,
+    "--arrival-memory-delay": `${ARRIVAL_STAGE_DELAYS_MS.memory}ms`,
+    "--arrival-homer-delay": `${ARRIVAL_STAGE_DELAYS_MS.homer}ms`,
+    "--arrival-question-delay": `${ARRIVAL_STAGE_DELAYS_MS.question}ms`,
+    "--arrival-response-delay": `${ARRIVAL_STAGE_DELAYS_MS.response}ms`,
+  } as CSSProperties;
   return <main className="journey">
     <header className="journey-top"><span className="brand">ODYSSEY <small>返鄉之旅</small></span><span className="goal-label">RETURNING TO <b>{memory.homeGoal}</b></span><span className="island-count">{String(index + 1).padStart(2, "0")} / 14</span></header>
     <div className="progress"><span style={{ width: `${((index + 1) / 14) * 100}%` }} /></div>
