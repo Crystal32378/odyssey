@@ -15,6 +15,24 @@ GPT is not the hero. **GPT is Homer. The player is the hero.**
 - Homer mirrors evidence from the journey and never diagnoses, coaches, or predicts.
 - Optional voice lets the player actively choose to hear Homer recite the current passage.
 
+## OpenAI-native origin
+
+Odyssey is an OpenAI-native product co-created by Crystal Chang and OpenAI across its full life cycle. Its first interactive prototype was made in March 2026 through a ChatGPT-guided Figma workflow. In July 2026, GPT-5.6 Sol and Codex helped turn that concept into a complete fourteen-station journey; during OpenAI Build Week, Codex became the principal implementation, testing, and Preview-deployment environment for the judging build.
+
+> **From its first Figma prototype to its fourteen-island journey and Build Week judging build, Odyssey has been shaped through sustained human–OpenAI collaboration.**
+
+Origin artifacts: [Figma Make prototype](https://www.figma.com/make/onEumi3vr6LPnKqOUfhTht/Language-Support-Inquiry?node-id=0-4&t=b4QZa0isC2H9AUwE-1) · [published March prototype](https://dress-vector-61986483.figma.site/)
+
+This lineage is not a claim that the entire product was created during Build Week. The pre-existing foundation and the submission-period additions remain explicitly separated in the [Build Week evidence record](docs/build-week-evidence.md) and [Issue #9](https://github.com/Crystal32378/odyssey/issues/9).
+
+## Classical and educational context
+
+Homer's *Odyssey* is studied in Literature Humanities, part of Columbia College's Core Curriculum. Crystal Chang also studied the epic in a Western Literature course at National Taiwan University.
+
+Traditional literary study asks readers to interpret Odysseus after his choices have already been made. Odyssey reverses that sequence: the modern traveler chooses first, then looks back as Homer uses the ancient text to reflect the traveler's encounters with temptation, responsibility, and home.
+
+This lineage gives the project educational relevance, but Odyssey is not limited to classrooms or positioned as a school-only tool. Its Build Week category remains **Apps for Your Life**.
+
 ## Public Preview
 
 The current judging Preview is available at:
