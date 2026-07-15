@@ -75,7 +75,10 @@ button { cursor: pointer; }
 .voyage-ship { filter: drop-shadow(0 2px 2px rgba(3,12,15,.8)) drop-shadow(0 0 5px rgba(238,214,165,.78)); }
 .voyage-scrim { position: absolute; z-index: -2; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(10,23,29,.08), rgba(8,18,23,.64)), linear-gradient(rgba(7,15,18,.24),rgba(7,15,18,.4)); }
 .voyage-top { color: rgba(233,223,198,.72); border-color: rgba(233,223,198,.22); }
-.voyage-copy { position: absolute; left: 50%; bottom: 9vh; width: min(680px,86vw); transform: translateX(-50%); text-align: center; text-shadow: 0 2px 18px rgba(5,11,13,.9); }
+.voyage-copy { position: absolute; width: min(620px,46vw); text-shadow: 0 2px 18px rgba(5,11,13,.9); }
+.voyage-copy-right-top { top: 17vh; right: 5vw; text-align: right; }
+.voyage-copy-left-bottom { left: 5vw; bottom: 8vh; text-align: left; }
+.voyage-copy-left-top { top: 17vh; left: 5vw; text-align: left; }
 .voyage-copy h1 { margin: 12px 0 14px; color: #eee3c9; font-size: clamp(2.3rem,5.4vw,5.4rem); font-weight: 400; line-height: 1; }
 .voyage-copy h1 span { color: #caa664; font-size: .34em; font-style: italic; }
 .voyage-copy > p:not(.eyebrow) { color: #c2cfca; font-size: .9rem; letter-spacing: .035em; }
@@ -136,7 +139,7 @@ button { cursor: pointer; }
   .world-title { top: 4vh; }.world-title span { font-size: clamp(2.7rem,15vw,5rem); }.world-title i { margin-top: 8px; font-size: .55rem; }
   .world-entry { left: 6vw; top: auto; bottom: 5vh; width: 88vw; }.world-entry h1 { font-size: clamp(2.2rem,10vw,4.2rem); }.world-entry p { font-size: .86rem; }
   .world-form { gap: 10px; }.world-form button { justify-self: start; }.world-mark, .goal-label, .island-node b { display: none; }
-  .journey-top { padding-inline: 6vw; }.voyage-copy { bottom: 7vh; }.voyage-copy h1 { font-size: clamp(2.2rem,11vw,4rem); }
+  .journey-top { padding-inline: 6vw; }.voyage-copy, .voyage-copy-right-top, .voyage-copy-left-bottom, .voyage-copy-left-top { left: 6vw; right: 6vw; top: auto; bottom: 7vh; width: auto; text-align: center; }.voyage-copy h1 { font-size: clamp(2.2rem,11vw,4rem); }
   .island-layout { min-height: auto; display: block; padding: 0; overflow: visible; background: #111012; }
   .island-art { position: relative; z-index: 0; width: 100%; height: min(47vh,430px); }
   .island-art img { object-position: var(--focal-mobile); }

@@ -92,6 +92,7 @@ export default function Home() {
 function VoyageOverlay({ fromIndex, toIndex, reducedMotion, complete }: { fromIndex: number; toIndex: number; reducedMotion: boolean; complete: () => void }) {
   const leg = getVoyageLeg(fromIndex, toIndex);
   const from = ISLANDS[fromIndex]; const to = ISLANDS[toIndex];
+  const copyPosition = fromIndex <= 4 ? "right-top" : fromIndex <= 8 ? "left-bottom" : "left-top";
   useEffect(() => { const timer = setTimeout(complete, reducedMotion ? 0 : VOYAGE_DURATION_MS); return () => clearTimeout(timer); }, [complete, reducedMotion]);
   return <main className="voyage-stage" aria-label={`Voyaging from ${from.name} to ${to.name}`}>
     <div className="voyage-map-plane" aria-hidden="true">
@@ -107,7 +108,7 @@ function VoyageOverlay({ fromIndex, toIndex, reducedMotion, complete }: { fromIn
     </div>
     <div className="voyage-scrim"/>
     <header className="journey-top voyage-top"><span className="brand">ODYSSEY <small>返鄉之旅</small></span><span className="island-count">{String(toIndex + 1).padStart(2, "0")} / 14</span></header>
-    <section className="voyage-copy" role="status"><p className="eyebrow">THE SEA REMEMBERS</p><h1>{from.name} <span>to</span> {to.name}</h1><p>Your answer is safe. Homer carries it toward the next shore.</p><button type="button" onClick={complete}>SKIP TO THE SHORE</button></section>
+    <section className={`voyage-copy voyage-copy-${copyPosition}`} role="status"><p className="eyebrow">THE SEA REMEMBERS</p><h1>{from.name} <span>to</span> {to.name}</h1><p>Your answer is safe. Homer carries it toward the next shore.</p><button type="button" onClick={complete}>SKIP TO THE SHORE</button></section>
   </main>;
 }
 
