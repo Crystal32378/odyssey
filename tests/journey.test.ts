@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { ISLAND_ART, ISLAND_FOCAL_POINTS } from "../lib/island-art.ts";
+import { ISLAND_ART, ISLAND_FOCAL_POINTS, ISLAND_PRESENTATION } from "../lib/island-art.ts";
 import { createJourneyMemory, ISLANDS, resolveIsland, type JourneyMemory, type JourneyStats } from "../lib/journey.ts";
 
 const ORDER = ["troy", "cicones", "lotus", "cyclops", "aeolia", "laestrygonians", "circe", "underworld", "sirens", "scylla", "thrinacia", "calypso", "phaeacia", "ithaca"];
@@ -29,11 +29,24 @@ test("every canonical island maps to an artwork file", () => {
 
 test("every canonical island protects its focal subject on desktop and mobile", () => {
   assert.deepEqual(Object.keys(ISLAND_FOCAL_POINTS).sort(), [...ORDER].sort());
+  assert.deepEqual(Object.keys(ISLAND_PRESENTATION).sort(), [...ORDER].sort());
   for (const island of ISLANDS) {
     const focal = ISLAND_FOCAL_POINTS[island.id];
+    const presentation = ISLAND_PRESENTATION[island.id];
     assert.match(focal.desktop, /^\d+% \d+%$/);
     assert.match(focal.mobile, /^\d+% \d+%$/);
+    assert.ok(presentation.contentSide === "left" || presentation.contentSide === "right");
+    assert.ok(presentation.scrimDirection === "left" || presentation.scrimDirection === "right");
+    if (presentation.contentWidth) assert.match(presentation.contentWidth, /^\d+px$/);
   }
+});
+
+test("Cyclops, Circe, and Aeolia use their required safe-zone compositions", () => {
+  assert.equal(ISLAND_PRESENTATION.cyclops.desktopFocal, "52% 18%");
+  assert.equal(ISLAND_PRESENTATION.cyclops.contentSide, "left");
+  assert.equal(ISLAND_PRESENTATION.circe.contentSide, "left");
+  assert.equal(ISLAND_PRESENTATION.aeolia.contentSide, "left");
+  assert.equal(ISLAND_PRESENTATION.scylla.contentSide, "left");
 });
 
 test("every island permits UNRESOLVED and only legal stat keys", () => {

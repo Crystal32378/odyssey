@@ -2,15 +2,24 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ENDING_REQUEST_TIMEOUT_MS, requestHomer } from "../lib/homer-client";
-import { ISLAND_ART, ISLAND_FOCAL_POINTS } from "../lib/island-art";
+import { ISLAND_ART, ISLAND_PRESENTATION } from "../lib/island-art";
 import { createJourneyMemory, getIsland, HomerScene, HomerTransition, ISLANDS, JourneyCard, JourneyMemory, JourneySummary, resolveIsland } from "../lib/journey";
-import { getVoyageLeg, JourneyPhase, recoverJourneyPhase, shouldAnimateVoyage, VOYAGE_DURATION_MS } from "../lib/voyage";
+import { advanceCrossingGate, canBeginCrossing, createCrossingGate, crossingCanSettle, getVoyageLeg, JourneyPhase, recoverJourneyPhase, type CrossingGate, VOYAGE_DURATION_MS } from "../lib/voyage";
 
 type Phase = JourneyPhase;
 type AudioStatus = "idle" | "loading" | "ready" | "playing" | "error";
 type EndingStage = "idle" | "summarizing" | "sealing";
 interface SavedJourney { goal: string; phase: Phase; memory: JourneyMemory | null; scene: HomerScene | null; answer: string; resolution: string; summary: JourneySummary | null; card: JourneyCard | null; }
-interface VoyageState { fromIndex: number; toIndex: number; }
+interface VoyageState {
+  id: number;
+  fromIndex: number;
+  toIndex: number;
+  playerInput: string;
+  gate: CrossingGate;
+  ending?: JourneyMemory["ending"];
+  errorMessage: string;
+  requestId: string;
+}
 const SESSION_KEY = "odyssey.fourteen-islands.v1";
 
 export default function Home() {
@@ -21,28 +30,71 @@ export default function Home() {
   const [audioStatus, setAudioStatus] = useState<AudioStatus>("idle"); const audioRef = useRef<HTMLAudioElement | null>(null); const audioUrlRef = useRef<string | null>(null);
   const [endingStage, setEndingStage] = useState<EndingStage>("idle");
   const [voyage, setVoyage] = useState<VoyageState | null>(null); const reducedMotion = usePrefersReducedMotion();
+  const voyageRef = useRef<VoyageState | null>(null); const crossingSequenceRef = useRef(0); const crossingBusyRef = useRef(false);
 
   // Session storage is an external source; this one-time hydration intentionally restores its snapshot.
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { try { const raw = sessionStorage.getItem(SESSION_KEY); if (raw) { const s = JSON.parse(raw) as SavedJourney; const interruptedEntry = s.phase === "loading" && !s.scene; setGoal(s.goal || ""); setPhase(recoverJourneyPhase(s.phase, Boolean(s.scene))); setMemory(interruptedEntry ? null : s.memory); setScene(s.scene); setAnswer(s.answer || ""); setResolution(s.resolution || ""); setSummary(s.summary); setCard(s.card); if (interruptedEntry) setErrorMessage("The first crossing was interrupted. Your Ithaca is preserved; begin again when ready."); } } catch { sessionStorage.removeItem(SESSION_KEY); } finally { setHydrated(true); } }, []);
+  useEffect(() => { try { const raw = sessionStorage.getItem(SESSION_KEY); if (raw) { const s = JSON.parse(raw) as SavedJourney; const interruptedEntry = s.phase === "loading" && !s.scene; const interruptedCrossing = (s.phase === "resolving" || s.phase === "voyaging") && Boolean(s.answer?.trim()); setGoal(s.goal || ""); setPhase(recoverJourneyPhase(s.phase, Boolean(s.scene))); setMemory(interruptedEntry ? null : s.memory); setScene(s.scene); setAnswer(s.answer || ""); setResolution(s.resolution || ""); setSummary(s.summary); setCard(s.card); if (interruptedEntry) setErrorMessage("The first crossing was interrupted. Your Ithaca is preserved; begin again when ready."); else if (interruptedCrossing) setErrorMessage("The crossing was interrupted. Your answer is preserved; try the passage again."); } } catch { sessionStorage.removeItem(SESSION_KEY); } finally { setHydrated(true); } }, []);
   useEffect(() => { if (!hydrated || phase === "map") return; sessionStorage.setItem(SESSION_KEY, JSON.stringify({ goal, phase, memory, scene, answer, resolution, summary, card } satisfies SavedJourney)); }, [answer, card, goal, hydrated, memory, phase, resolution, scene, summary]);
   // A changed scene invalidates the browser audio resource and its playback state.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); audioRef.current = null; audioUrlRef.current = null; setAudioStatus("idle"); }, [scene?.narrative]);
-  function recordError(error: unknown) { const e = error as Error & { requestId?: string }; setErrorMessage(e.message || "The sea has not answered."); setRequestId(e.requestId || ""); }
+  function describeError(error: unknown) { const e = error as Error & { requestId?: string }; return { message: e.message || "The sea has not answered.", requestId: e.requestId || "" }; }
+  function recordError(error: unknown) { const details = describeError(error); setErrorMessage(details.message); setRequestId(details.requestId); }
+  function updateVoyage(next: VoyageState | null) { voyageRef.current = next; setVoyage(next); }
+
+  function settleCrossing(crossing: VoyageState) {
+    if (!crossingCanSettle(crossing.gate)) return;
+    updateVoyage(null); crossingBusyRef.current = false; setPhase(crossing.ending ? "ending" : "island");
+  }
 
   async function beginJourney() { const homeGoal = goal.trim(); if (!homeGoal) return; setErrorMessage(""); setPhase("loading"); const initial = createJourneyMemory(homeGoal); setMemory(initial); try { setScene(await requestHomer<HomerScene>({ phase: "enter", islandIndex: 0, homeGoal, timeline: [] })); setPhase("island"); } catch (e) { setPhase("map"); recordError(e); } }
-  async function resolveAnswer() {
-    const playerInput = answer.trim(); if (!playerInput || !memory || phase === "resolving") return;
-    const island = getIsland(memory.currentIsland); if (!island) return; setErrorMessage(""); setPhase("resolving");
+  function resolveAnswer() {
+    const playerInput = answer.trim();
+    if (!playerInput || !memory || crossingBusyRef.current || !canBeginCrossing(phase, Boolean(voyageRef.current))) return;
+    const fromIndex = memory.currentIsland; const island = getIsland(fromIndex); if (!island) return;
+    const crossing: VoyageState = {
+      id: ++crossingSequenceRef.current,
+      fromIndex,
+      toIndex: Math.min(fromIndex + 1, ISLANDS.length - 1),
+      playerInput,
+      gate: createCrossingGate(reducedMotion),
+      errorMessage: "",
+      requestId: "",
+    };
+    crossingBusyRef.current = true; setErrorMessage(""); setRequestId(""); updateVoyage(crossing); setPhase("voyaging");
+    void performResolve(crossing.id, memory, playerInput);
+  }
+
+  async function performResolve(crossingId: number, memoryAtDeparture: JourneyMemory, playerInput: string) {
+    const island = getIsland(memoryAtDeparture.currentIsland); if (!island) return;
     try {
-      const transition = await requestHomer<HomerTransition>({ phase: "resolve", islandIndex: memory.currentIsland, homeGoal: memory.homeGoal, timeline: memory.timeline, playerInput });
-      const updated = resolveIsland(memory, island, transition.action_tag, playerInput); setMemory(updated); setResolution(transition.resolution); setAnswer("");
-      if (updated.ending) { setScene({ narrative: transition.next_narrative, question: transition.next_question }); setPhase("ending"); return; }
+      const transition = await requestHomer<HomerTransition>({ phase: "resolve", islandIndex: memoryAtDeparture.currentIsland, homeGoal: memoryAtDeparture.homeGoal, timeline: memoryAtDeparture.timeline, playerInput });
+      const current = voyageRef.current; if (!current || current.id !== crossingId) return;
+      const updated = resolveIsland(memoryAtDeparture, island, transition.action_tag, playerInput); setMemory(updated); setResolution(transition.resolution); setAnswer("");
       setScene({ narrative: transition.next_narrative, question: transition.next_question });
-      if (shouldAnimateVoyage(reducedMotion)) { setVoyage({ fromIndex: memory.currentIsland, toIndex: updated.currentIsland }); setPhase("voyaging"); }
-      else setPhase("island");
-    } catch (e) { setPhase("island"); recordError(e); }
+      const next = { ...current, gate: advanceCrossingGate(current.gate, { type: "api-resolved" }), ending: updated.ending };
+      crossingBusyRef.current = false; updateVoyage(next); settleCrossing(next);
+    } catch (error) {
+      const current = voyageRef.current; if (!current || current.id !== crossingId) return;
+      const details = describeError(error);
+      const next = { ...current, gate: advanceCrossingGate(current.gate, { type: "api-failed" }), errorMessage: details.message, requestId: details.requestId };
+      crossingBusyRef.current = false; setErrorMessage(details.message); setRequestId(details.requestId); updateVoyage(next);
+    }
+  }
+
+  function finishVoyageVisual() {
+    const current = voyageRef.current; if (!current) return;
+    const next = { ...current, gate: advanceCrossingGate(current.gate, { type: "visual-complete" }) };
+    updateVoyage(next); settleCrossing(next);
+  }
+
+  function retryCrossing() {
+    const current = voyageRef.current;
+    if (!current || current.gate.status !== "error" || crossingBusyRef.current || !memory) return;
+    const next = { ...current, gate: createCrossingGate(true), ending: undefined, errorMessage: "", requestId: "" };
+    crossingBusyRef.current = true; setErrorMessage(""); setRequestId(""); updateVoyage(next);
+    void performResolve(next.id, memory, next.playerInput);
   }
   async function generateEnding() {
     if (!memory || phase === "generating_end") return;
@@ -55,66 +107,79 @@ export default function Home() {
     } catch (e) { setEndingStage("idle"); setPhase("ending"); recordError(e); }
   }
   async function hearHomer() { if (!scene || audioStatus === "loading") return; if (audioStatus === "playing" && audioRef.current) { audioRef.current.pause(); setAudioStatus("ready"); return; } if (audioStatus === "ready" && audioRef.current) { try { await audioRef.current.play(); setAudioStatus("playing"); } catch { setAudioStatus("error"); } return; } setAudioStatus("loading"); try { const response = await fetch("/api/homer/audio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: `${scene.narrative} ${scene.question}` }) }); if (!response.ok) throw new Error(); const url = URL.createObjectURL(await response.blob()); audioUrlRef.current = url; const audio = new Audio(url); audioRef.current = audio; audio.onended = () => setAudioStatus("ready"); audio.onerror = () => setAudioStatus("error"); await audio.play(); setAudioStatus("playing"); } catch { setAudioStatus("error"); } }
-  function finishVoyage() { setVoyage(null); setPhase("island"); }
-  function resetJourney() { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); sessionStorage.removeItem(SESSION_KEY); setGoal(""); setPhase("map"); setMemory(null); setScene(null); setAnswer(""); setResolution(""); setSummary(null); setCard(null); setEndingStage("idle"); setVoyage(null); setErrorMessage(""); setRequestId(""); }
+  function resetJourney() { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); sessionStorage.removeItem(SESSION_KEY); crossingBusyRef.current = false; updateVoyage(null); setGoal(""); setPhase("map"); setMemory(null); setScene(null); setAnswer(""); setResolution(""); setSummary(null); setCard(null); setEndingStage("idle"); setErrorMessage(""); setRequestId(""); }
 
   if (phase === "map") return <Map goal={goal} setGoal={setGoal} begin={beginJourney} error={errorMessage} />;
   if (!memory || !scene || phase === "loading") return <main className="journey voyage-loading"><p className="eyebrow">THE FIRST SHORE</p><h1>The map remembers your name.</h1><p>Homer gathers the words of your return.</p></main>;
-  if (phase === "voyaging" && voyage) return <VoyageOverlay fromIndex={voyage.fromIndex} toIndex={voyage.toIndex} reducedMotion={reducedMotion} complete={finishVoyage}/>;
+  if (phase === "voyaging" && voyage) return <VoyageOverlay crossing={voyage} reducedMotion={reducedMotion} complete={finishVoyageVisual} retry={retryCrossing}/>;
   if (memory.ending) return <Ending memory={memory} scene={scene} summary={summary} card={card} phase={phase} stage={endingStage} generate={generateEnding} reset={resetJourney} error={errorMessage} />;
 
-  const island = getIsland(memory.currentIsland); const index = memory.currentIsland;
+  const island = getIsland(memory.currentIsland); const index = memory.currentIsland; const presentation = ISLAND_PRESENTATION[island.id];
+  const presentationStyle = { "--content-width": presentation.contentWidth || "590px" } as CSSProperties;
   return <main className="journey">
     <header className="journey-top"><span className="brand">ODYSSEY <small>返鄉之旅</small></span><span className="goal-label">RETURNING TO <b>{memory.homeGoal}</b></span><span className="island-count">{String(index + 1).padStart(2, "0")} / 14</span></header>
     <div className="progress"><span style={{ width: `${((index + 1) / 14) * 100}%` }} /></div>
-    <section className="island-layout" key={island.id}>
+    <section className={`island-layout island-${island.id} content-${presentation.contentSide} scrim-${presentation.scrimDirection}`} key={island.id} style={presentationStyle}>
       <IslandArtwork islandId={island.id} name={island.name}/>
       <article className="narrative">
-        <div className="arrival-name stage-step stage-step-name"><p className="eyebrow">ISLAND {String(index + 1).padStart(2, "0")} · {island.name.toUpperCase()}</p><h1>{island.name}</h1></div>
-        <p className="stage-epithet stage-step stage-step-epithet">{island.epithet}</p>
-        {resolution && <p className="resolution">THE SEA REMEMBERS · {resolution}</p>}
+        <div className="arrival-name stage-step stage-step-name"><p className="eyebrow">ISLAND {String(index + 1).padStart(2, "0")} · {island.name.toUpperCase()}</p><h1>{island.name}</h1><p className="stage-epithet">{island.epithet}</p></div>
+        <section className="memory-beat stage-step stage-step-memory" aria-label="The sea remembers"><span>THE SEA REMEMBERS</span><p>{resolution || `Your Ithaca is named: ${memory.homeGoal}.`}</p></section>
         <section className="homer-witness stage-step stage-step-homer" aria-label="Homer bears witness">
-          <p className="homer-cue"><span>HOMER</span> BEARS WITNESS</p>
+          <p className="homer-cue">Homer bears witness</p>
           <p className="story" aria-live="polite">{scene.narrative}</p>
           <AudioButton status={audioStatus} play={hearHomer}/>
         </section>
-        <p className="island-question stage-step stage-step-question">{scene.question}</p>
+        <section className="choice-beat stage-step stage-step-question"><p className="island-question">{scene.question}</p></section>
         <div className="response-band stage-step stage-step-response">
-          <label className="answer-label" htmlFor="answer">THE TRAVELER SPEAKS</label>
-          <textarea id="answer" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Leave a few words for the sea…" disabled={phase === "resolving"}/>
-          <div className="journey-actions"><button className="answer-shore" onClick={resolveAnswer} disabled={phase === "resolving" || !answer.trim()}>{phase === "resolving" ? "THE SEA REMEMBERS…" : island.id === "ithaca" ? "COMPLETE THE RETURN" : "ANSWER THE SHORE"}</button>{errorMessage && <ErrorBox message={errorMessage} requestId={requestId} retry={resolveAnswer}/>}<button className="new-voyage" onClick={resetJourney}>START A NEW JOURNEY</button></div>
+          <label className="answer-label" htmlFor="answer">Your answer</label>
+          <textarea id="answer" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Leave a few words for the sea…"/>
+          <div className="journey-actions"><button className="answer-shore" onClick={resolveAnswer} disabled={!answer.trim()}>{island.id === "ithaca" ? "COMPLETE THE RETURN" : "ANSWER THE SHORE"}</button>{errorMessage && <ErrorBox message={errorMessage} requestId={requestId} retry={resolveAnswer}/>}<button className="new-voyage" onClick={resetJourney}>START A NEW JOURNEY</button></div>
         </div>
       </article>
     </section>
   </main>;
 }
 
-function VoyageOverlay({ fromIndex, toIndex, reducedMotion, complete }: { fromIndex: number; toIndex: number; reducedMotion: boolean; complete: () => void }) {
-  const leg = getVoyageLeg(fromIndex, toIndex);
-  const from = ISLANDS[fromIndex]; const to = ISLANDS[toIndex];
+function VoyageOverlay({ crossing, reducedMotion, complete, retry }: { crossing: VoyageState; reducedMotion: boolean; complete: () => void; retry: () => void }) {
+  const { fromIndex, toIndex, gate, errorMessage, requestId } = crossing;
+  const hasLeg = toIndex === fromIndex + 1; const leg = hasLeg ? getVoyageLeg(fromIndex, toIndex) : null;
+  const from = ISLANDS[fromIndex]; const to = ISLANDS[toIndex] || from;
   const copyPosition = fromIndex <= 4 ? "right-top" : fromIndex <= 8 ? "left-bottom" : "left-top";
-  useEffect(() => { const timer = setTimeout(complete, reducedMotion ? 0 : VOYAGE_DURATION_MS); return () => clearTimeout(timer); }, [complete, reducedMotion]);
-  return <main className="voyage-stage" aria-label={`Voyaging from ${from.name} to ${to.name}`}>
-    <div className="voyage-map-plane" aria-hidden="true">
+  const completeRef = useRef(complete); useEffect(() => { completeRef.current = complete; }, [complete]);
+  useEffect(() => { if (gate.visualDone) return; const timer = setTimeout(() => completeRef.current(), reducedMotion ? 0 : VOYAGE_DURATION_MS); return () => clearTimeout(timer); }, [fromIndex, gate.visualDone, reducedMotion, toIndex]);
+  const sailing = !gate.visualDone && gate.status !== "error" && !reducedMotion;
+  const waiting = gate.visualDone && gate.status === "pending";
+  const failed = gate.status === "error";
+  const mapStyle = { "--voyage-focus-x": leg ? `${leg.from.x}%` : "50%", "--voyage-focus-y": leg ? `${(leg.from.y / 66.67) * 100}%` : "50%" } as CSSProperties;
+  return <main className={`voyage-stage voyage-${failed ? "failed" : waiting ? "waiting" : "sailing"}`} aria-label={hasLeg ? `Voyaging from ${from.name} to ${to.name}` : `Gathering the final answer at ${from.name}`}>
+    <div className={`voyage-map-plane${sailing ? " is-sailing" : ""}`} style={mapStyle} aria-hidden="true">
       <img src="/odyssey-map.png" alt=""/>
       <svg viewBox="0 0 100 66.67" role="presentation">
-        <path className="voyage-leg" d={leg.path}/>
-        <g className="voyage-vessel">
+        {leg && <path className="voyage-leg" d={leg.path}/>}
+        {leg && !gate.visualDone && <g className="voyage-vessel">
           <circle className="voyage-halo" cx="0" cy="0" r="5"/>
           <image className="voyage-ship" href="/assets/ship-token.webp" x="-5" y="-3.8" width="10" height="7.6"/>
           <animateMotion dur={`${VOYAGE_DURATION_MS}ms`} path={leg.path} fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.45 0 0.55 1"/>
-        </g>
+        </g>}
+        {leg && gate.visualDone && !failed && <g className="voyage-vessel voyage-vessel-arrived" transform={`translate(${leg.to.x} ${leg.to.y})`}><circle className="voyage-halo" cx="0" cy="0" r="5"/><image className="voyage-ship" href="/assets/ship-token.webp" x="-5" y="-3.8" width="10" height="7.6"/></g>}
       </svg>
     </div>
     <div className="voyage-scrim"/>
     <header className="journey-top voyage-top"><span className="brand">ODYSSEY <small>返鄉之旅</small></span><span className="island-count">{String(toIndex + 1).padStart(2, "0")} / 14</span></header>
-    <section className={`voyage-copy voyage-copy-${copyPosition}`} role="status"><p className="eyebrow">THE SEA REMEMBERS</p><h1>{from.name} <span>to</span> {to.name}</h1><p>Your answer is safe. Homer carries it toward the next shore.</p><button type="button" onClick={complete}>SKIP TO THE SHORE</button></section>
+    <section className={`voyage-copy voyage-copy-${copyPosition}`} role="status">
+      <p className="eyebrow">{failed ? "THE CROSSING FALTERS" : waiting ? "THE SEA CARRIES YOUR ANSWER" : "THE SEA REMEMBERS"}</p>
+      <h1>{failed ? "Your words remain aboard." : waiting ? "A new shore gathers beyond the mist." : hasLeg ? <>{from.name} <span>to</span> {to.name}</> : "The final word crosses the water."}</h1>
+      <p>{failed ? "The shore has not been crossed. Your answer is still safe." : waiting ? "Homer is still gathering what this choice will become." : "Your answer is safe. The world moves while Homer bears witness."}</p>
+      {requestId && failed && <small>Sea mark: {requestId}</small>}
+      {failed ? <button type="button" onClick={retry}>TRY THE CROSSING AGAIN</button> : !gate.visualDone && <button type="button" onClick={complete}>SKIP TO THE SHORE</button>}
+      {failed && errorMessage && <span className="voyage-error-detail">{errorMessage}</span>}
+    </section>
   </main>;
 }
 
 function IslandArtwork({ islandId, name }: { islandId: string; name: string }) {
   const source = ISLAND_ART[islandId];
-  const focal = ISLAND_FOCAL_POINTS[islandId];
+  const presentation = ISLAND_PRESENTATION[islandId];
   const [attempt, setAttempt] = useState(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (retryTimer.current) clearTimeout(retryTimer.current); }, []);
@@ -123,7 +188,7 @@ function IslandArtwork({ islandId, name }: { islandId: string; name: string }) {
     retryTimer.current = setTimeout(() => { retryTimer.current = null; setAttempt((value) => value + 1); }, 450);
   }
   const retrySuffix = attempt ? `?retry=${attempt}` : "";
-  const focalStyle = { "--focal-desktop": focal.desktop, "--focal-mobile": focal.mobile } as CSSProperties;
+  const focalStyle = { "--focal-desktop": presentation.desktopFocal, "--focal-mobile": presentation.mobileFocal } as CSSProperties;
   return <div className={`island-art island-art-${islandId}`} style={focalStyle}><img src={`${source}${retrySuffix}`} alt={`${name}, the present shore`} decoding="async" fetchPriority="high" onError={retryImage}/><div className="island-art-veil"/></div>;
 }
 

@@ -11,7 +11,19 @@ export interface VoyageLeg {
   path: string;
 }
 
-export const VOYAGE_DURATION_MS = 1500;
+export type CrossingStatus = "pending" | "resolved" | "error";
+
+export interface CrossingGate {
+  visualDone: boolean;
+  status: CrossingStatus;
+}
+
+export type CrossingEvent =
+  | { type: "visual-complete" }
+  | { type: "api-resolved" }
+  | { type: "api-failed" };
+
+export const VOYAGE_DURATION_MS = 4000;
 
 // These centers match the fourteen medallions already painted into the landing map.
 export const VOYAGE_POINTS: readonly VoyagePoint[] = [
@@ -32,6 +44,24 @@ export function getVoyageLeg(fromIndex: number, toIndex: number): VoyageLeg {
 
 export function shouldAnimateVoyage(reducedMotion: boolean) {
   return !reducedMotion;
+}
+
+export function createCrossingGate(reducedMotion: boolean): CrossingGate {
+  return { visualDone: reducedMotion, status: "pending" };
+}
+
+export function advanceCrossingGate(gate: CrossingGate, event: CrossingEvent): CrossingGate {
+  if (event.type === "visual-complete") return { ...gate, visualDone: true };
+  if (event.type === "api-resolved") return { ...gate, status: "resolved" };
+  return { visualDone: true, status: "error" };
+}
+
+export function crossingCanSettle(gate: CrossingGate) {
+  return gate.visualDone && gate.status === "resolved";
+}
+
+export function canBeginCrossing(phase: JourneyPhase, hasActiveCrossing: boolean) {
+  return phase === "island" && !hasActiveCrossing;
 }
 
 export function recoverJourneyPhase(phase: JourneyPhase, hasScene: boolean): JourneyPhase {
