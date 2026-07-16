@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const root = process.cwd();
 const cacheDir = path.join(root, ".odyssey-cache");
@@ -25,6 +26,7 @@ async function checkModel(model) {
     body: JSON.stringify({
       model,
       input: "Return the Odyssey Homer model readiness check.",
+      store: false,
       reasoning: { effort: "none" },
       text: {
         format: {
@@ -52,43 +54,63 @@ async function checkModel(model) {
   };
 }
 
-loadEnvFile();
-if (!process.env.OPENAI_API_KEY) {
-  console.log("Homer preflight: OPENAI_API_KEY is missing.");
-  process.exit(0);
+export function requiredModelSet(environment = process.env) {
+  return [...new Set([
+    environment.HOMER_MODEL || "gpt-5.6-sol",
+    environment.DIVINE_MODEL || "gpt-5.6-terra",
+    environment.LUNA_MODEL,
+    environment.HOMER_MODEL_CANDIDATE,
+    environment.HOMER_MODEL_FALLBACK || "gpt-5.5",
+  ].filter(Boolean))].sort();
 }
 
-if (fs.existsSync(cachePath)) {
-  const cached = JSON.parse(fs.readFileSync(cachePath, "utf8"));
-  if (cached.date === today) {
-    console.log(`Homer preflight: already checked ${today}.`);
-    process.exit(0);
+export function modelSetCacheMatches(cached, date, models) {
+  return cached?.date === date
+    && Array.isArray(cached.models)
+    && cached.models.length === models.length
+    && cached.models.every((model, index) => model === models[index]);
+}
+
+export async function runPreflight() {
+  loadEnvFile();
+  if (!process.env.OPENAI_API_KEY) {
+    console.log("Odyssey model preflight: OPENAI_API_KEY is missing.");
+    return;
   }
-}
 
-const active = process.env.HOMER_MODEL || "gpt-5.6-sol";
-const candidate = process.env.HOMER_MODEL_CANDIDATE || active;
-const fallback = process.env.HOMER_MODEL_FALLBACK || "gpt-5.5";
-const results = [];
-
-for (const model of new Set([active, candidate, fallback])) {
-  try {
-    results.push(await checkModel(model));
-  } catch {
-    results.push({ model, available: false, status: 0, code: "NETWORK_ERROR", requestId: null });
+  const models = requiredModelSet();
+  if (fs.existsSync(cachePath)) {
+    const cached = JSON.parse(fs.readFileSync(cachePath, "utf8"));
+    if (modelSetCacheMatches(cached, today, models)) {
+      console.log(`Odyssey model preflight: already checked ${today} for ${models.join(", ")}.`);
+      return;
+    }
   }
-}
 
-fs.mkdirSync(cacheDir, { recursive: true });
-fs.writeFileSync(
-  cachePath,
-  JSON.stringify({ date: today, checkedAt: new Date().toISOString(), results }, null, 2),
-  { mode: 0o600 },
-);
+  const results = [];
+  for (const model of models) {
+    try {
+      results.push(await checkModel(model));
+    } catch {
+      results.push({ model, available: false, status: 0, code: "NETWORK_ERROR", requestId: null });
+    }
+  }
 
-for (const result of results) {
-  console.log(
-    `Homer preflight: ${result.model} ${result.available ? "available" : `unavailable (${result.code || result.status})`}`,
+  fs.mkdirSync(cacheDir, { recursive: true });
+  fs.writeFileSync(
+    cachePath,
+    JSON.stringify({ date: today, models, checkedAt: new Date().toISOString(), results }, null, 2),
+    { mode: 0o600 },
   );
+
+  for (const result of results) {
+    console.log(
+      `Odyssey model preflight: ${result.model} ${result.available ? "available" : `unavailable (${result.code || result.status})`}`,
+    );
+  }
+  console.log("Odyssey model preflight is non-blocking; model promotion is always manual.");
 }
-console.log("Homer preflight is non-blocking; model promotion is always manual.");
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  await runPreflight();
+}

@@ -2,5 +2,16 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   // Preview-only Worker. Production will use a separately reviewed config.
   "name": "odyssey-preview",
-  "compatibility_date": "2026-05-15"
+  "compatibility_date": "2026-05-15",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "odyssey-preview-encounters",
+      "database_id": "f83a619b-771c-4e75-9e76-07a22b3dee30",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "triggers": {
+    "crons": ["17 * * * *"]
+  }
 }
