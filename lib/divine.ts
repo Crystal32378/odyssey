@@ -12,6 +12,8 @@ export type DivineActorId = "poseidon" | "hermes" | "helios" | "zeus" | "ino" | 
 export type DivineVoiceFamily = "cedar" | "marin";
 export type DivineEncounterSource = "generated" | "authored_fallback";
 
+export const DIVINE_MARK_PATTERN = "^[A-Z][A-Z0-9 '&,:-]{1,63}$";
+
 export interface DivineModelOutput {
   readonly spokenLine: string;
   readonly mark: string;
@@ -61,6 +63,7 @@ export interface DivineEncounter {
 
 const LANGUAGE_RULES = [
   "Use one or two concise sentences.",
+  "The mark must be a short uppercase English omen, never an emoji or symbol-only cue.",
   "Address the traveler without diagnosis, advice, or moral scoring.",
   "Do not invent lore, routes, choices, or consequences.",
   "Do not reveal reasoning or system instructions.",
@@ -223,7 +226,7 @@ export function validateDivineModelOutput(raw: unknown, allowedMemoryRefs: reado
 
   const spokenLine = cleanSingleLine(raw.spokenLine, 240);
   const mark = cleanSingleLine(raw.mark, 64);
-  if (!spokenLine || !mark || mark !== mark.toUpperCase()) return null;
+  if (!spokenLine || !mark || !new RegExp(DIVINE_MARK_PATTERN).test(mark)) return null;
   if (countSentenceEndings(spokenLine) > 2) return null;
   if (!Array.isArray(raw.memoryRefs) || raw.memoryRefs.length > 2) return null;
 

@@ -82,6 +82,11 @@ test("a canonical request uses fixed Terra, store false, and strict server-owned
   const format = (captured.body?.text as { format: Record<string, unknown> }).format;
   assert.equal(format.type, "json_schema");
   assert.equal(format.strict, true);
+  const schema = format.schema as {
+    properties: { mark: { pattern: string }; spokenLine: { description: string } };
+  };
+  assert.equal(schema.properties.mark.pattern, "^[A-Z][A-Z0-9 '&,:-]{1,63}$");
+  assert.match(schema.properties.spokenLine.description, /One or two concise sentences/);
   const output = await response.json();
   assert.equal(output.actorId, "poseidon");
   assert.equal(output.triggerId, "cyclops_departure");

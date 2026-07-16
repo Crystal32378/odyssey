@@ -1,6 +1,7 @@
 import { isRateLimited, readJsonWithLimit } from "../api-boundary.ts";
 import {
   composeDivineEncounter,
+  DIVINE_MARK_PATTERN,
   DIVINE_REGISTRY,
   getDivineTriggerForResolvedDeparture,
   getDivineRegistryEntry,
@@ -275,8 +276,19 @@ function divineOutputSchema(memoryRefs: readonly string[]) {
     type: "object",
     additionalProperties: false,
     properties: {
-      spokenLine: { type: "string", maxLength: 240 },
-      mark: { type: "string", maxLength: 64 },
+      spokenLine: {
+        type: "string",
+        minLength: 1,
+        maxLength: 240,
+        description: "One or two concise sentences, without line breaks.",
+      },
+      mark: {
+        type: "string",
+        minLength: 2,
+        maxLength: 64,
+        pattern: DIVINE_MARK_PATTERN,
+        description: "A short uppercase English omen, not an emoji or symbol-only cue.",
+      },
       memoryRefs: {
         type: "array",
         maxItems: 2,

@@ -119,6 +119,13 @@ test("manual validation accepts only bounded output and allowlisted memory refer
     mark: "THE SEA REMEMBERS",
     memoryRefs: ["client.forged"],
   }, ["cyclops.answer"]), null);
+  for (const invalidMark of ["The Sea Remembers", "🌊", "---"]) {
+    assert.equal(validateDivineModelOutput({
+      spokenLine: "The sea remembers.",
+      mark: invalidMark,
+      memoryRefs: [],
+    }, []), null);
+  }
 });
 
 function atIsland(index: number): JourneyMemory {
