@@ -1,6 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { DivinePresenceStage } from "./divine-presence-stage";
+import { requestDivineEncounter } from "../lib/divine-client";
+import { getDivineTriggerForResolvedDeparture, type DivineTriggerId } from "../lib/divine";
+import {
+  activateDivineEncounter,
+  clearDivineSession,
+  createDivineSession,
+  dismissDivineEncounter,
+  readDivineSession,
+  recoverDivineEncounter,
+  resetDivineSession,
+  writeDivineSession,
+  type DivineSession,
+} from "../lib/divine-session";
 import { ENDING_REQUEST_TIMEOUT_MS, requestHomer } from "../lib/homer-client";
 import { ISLAND_ART, ISLAND_PRESENTATION } from "../lib/island-art";
 import { createJourneyMemory, getIsland, HomerScene, HomerTransition, ISLANDS, JourneyCard, JourneyMemory, JourneySummary, resolveIsland } from "../lib/journey";
@@ -19,6 +33,8 @@ interface VoyageState {
   ending?: JourneyMemory["ending"];
   errorMessage: string;
   requestId: string;
+  divineTrigger?: DivineTriggerId;
+  resolvedMemory?: JourneyMemory;
 }
 const SESSION_KEY = "odyssey.fourteen-islands.v1";
 const VOYAGE_ASSETS = ["/odyssey-map.png", "/assets/ship-token.webp"] as const;
@@ -44,24 +60,82 @@ export default function Home() {
   const [endingStage, setEndingStage] = useState<EndingStage>("idle");
   const [voyage, setVoyage] = useState<VoyageState | null>(null); const reducedMotion = usePrefersReducedMotion();
   const voyageRef = useRef<VoyageState | null>(null); const crossingSequenceRef = useRef(0); const crossingBusyRef = useRef(false);
+  const [divineSession, setDivineSession] = useState<DivineSession | null>(null); const divineSessionRef = useRef<DivineSession | null>(null); const divineRequestRef = useRef<string | null>(null);
 
   // Session storage is an external source; this one-time hydration intentionally restores its snapshot.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { try { const raw = sessionStorage.getItem(SESSION_KEY); if (raw) { const s = JSON.parse(raw) as SavedJourney; const interruptedEntry = s.phase === "loading" && !s.scene; const interruptedCrossing = (s.phase === "resolving" || s.phase === "voyaging") && Boolean(s.answer?.trim()); setGoal(s.goal || ""); setPhase(recoverJourneyPhase(s.phase, Boolean(s.scene))); setMemory(interruptedEntry ? null : s.memory); setScene(s.scene); setAnswer(s.answer || ""); setResolution(s.resolution || ""); setSummary(s.summary); setCard(s.card); if (interruptedEntry) setErrorMessage("The first crossing was interrupted. Your Ithaca is preserved; begin again when ready."); else if (interruptedCrossing) setErrorMessage("The crossing was interrupted. Your answer is preserved; try the passage again."); } } catch { sessionStorage.removeItem(SESSION_KEY); } finally { setHydrated(true); } }, []);
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    let restoredMemory: JourneyMemory | null = null;
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (raw) {
+        const s = JSON.parse(raw) as SavedJourney;
+        const interruptedEntry = s.phase === "loading" && !s.scene;
+        const interruptedCrossing = (s.phase === "resolving" || s.phase === "voyaging") && Boolean(s.answer?.trim());
+        restoredMemory = interruptedEntry ? null : s.memory;
+        setGoal(s.goal || ""); setPhase(recoverJourneyPhase(s.phase, Boolean(s.scene))); setMemory(restoredMemory); setScene(s.scene); setAnswer(s.answer || ""); setResolution(s.resolution || ""); setSummary(s.summary); setCard(s.card);
+        if (interruptedEntry) setErrorMessage("The first crossing was interrupted. Your Ithaca is preserved; begin again when ready.");
+        else if (interruptedCrossing) setErrorMessage("The crossing was interrupted. Your answer is preserved; try the passage again.");
+      }
+    } catch {
+      sessionStorage.removeItem(SESSION_KEY);
+    }
+    try {
+      const next = restoredMemory
+        ? recoverDivineEncounter(readDivineSession(sessionStorage), restoredMemory)
+        : resetDivineSession(sessionStorage);
+      divineSessionRef.current = next;
+      setDivineSession(next);
+    } catch {
+      const next = createDivineSession();
+      divineSessionRef.current = next;
+      setDivineSession(next);
+    } finally {
+      setHydrated(true);
+    }
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
   useEffect(() => { if (!hydrated || phase === "map") return; sessionStorage.setItem(SESSION_KEY, JSON.stringify({ goal, phase, memory, scene, answer, resolution, summary, card } satisfies SavedJourney)); }, [answer, card, goal, hydrated, memory, phase, resolution, scene, summary]);
+  useEffect(() => {
+    if (!hydrated || !divineSession) return;
+    try { writeDivineSession(sessionStorage, divineSession); } catch { /* The in-memory receipt still protects this page session. */ }
+  }, [divineSession, hydrated]);
+  const stableDivineRequestState = phase === "island" && Boolean(memory && scene);
+  useEffect(() => {
+    if (!hydrated || !stableDivineRequestState || !divineSession?.pending) return;
+    const journeyId = divineSession.journeyId;
+    const pending = divineSession.pending;
+    const requestKey = `${journeyId}:${pending.triggerId}`;
+    if (divineRequestRef.current === requestKey) return;
+    divineRequestRef.current = requestKey;
+    void requestDivineEncounter({ journeyId, triggerId: pending.triggerId, context: pending.context }).then((encounter) => {
+      setDivineSession((current) => {
+        if (!current || current.journeyId !== journeyId) return current;
+        const next = activateDivineEncounter(current, encounter);
+        divineSessionRef.current = next;
+        return next;
+      });
+    });
+  }, [divineSession?.journeyId, divineSession?.pending, hydrated, stableDivineRequestState]);
   // A changed scene invalidates the browser audio resource and its playback state.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); audioRef.current = null; audioUrlRef.current = null; setAudioStatus("idle"); }, [scene?.narrative]);
   function describeError(error: unknown) { const e = error as Error & { requestId?: string }; return { message: e.message || "The sea has not answered.", requestId: e.requestId || "" }; }
   function recordError(error: unknown) { const details = describeError(error); setErrorMessage(details.message); setRequestId(details.requestId); }
   function updateVoyage(next: VoyageState | null) { voyageRef.current = next; setVoyage(next); }
+  function updateDivineSession(next: DivineSession | null) { divineSessionRef.current = next; setDivineSession(next); }
 
   function settleCrossing(crossing: VoyageState) {
     if (!crossingCanSettle(crossing.gate)) return;
     updateVoyage(null); crossingBusyRef.current = false; setPhase(crossing.ending ? "ending" : "island");
+    if (crossing.divineTrigger && crossing.resolvedMemory && !crossing.ending) {
+      const current = divineSessionRef.current || createDivineSession();
+      const next = recoverDivineEncounter(current, crossing.resolvedMemory);
+      updateDivineSession(next);
+    }
   }
 
-  async function beginJourney() { const homeGoal = goal.trim(); if (!homeGoal) return; setErrorMessage(""); setPhase("loading"); const initial = createJourneyMemory(homeGoal); setMemory(initial); try { setScene(await requestHomer<HomerScene>({ phase: "enter", islandIndex: 0, homeGoal, timeline: [] })); setPhase("island"); } catch (e) { setPhase("map"); recordError(e); } }
+  async function beginJourney() { const homeGoal = goal.trim(); if (!homeGoal) return; setErrorMessage(""); setPhase("loading"); const initial = createJourneyMemory(homeGoal); setMemory(initial); try { updateDivineSession(resetDivineSession(sessionStorage)); } catch { updateDivineSession(createDivineSession()); } try { setScene(await requestHomer<HomerScene>({ phase: "enter", islandIndex: 0, homeGoal, timeline: [] })); setPhase("island"); } catch (e) { setPhase("map"); recordError(e); } }
   function resolveAnswer() {
     const playerInput = answer.trim();
     if (!playerInput || !memory || crossingBusyRef.current || !canBeginCrossing(phase, Boolean(voyageRef.current))) return;
@@ -86,7 +160,8 @@ export default function Home() {
       const current = voyageRef.current; if (!current || current.id !== crossingId) return;
       const updated = resolveIsland(memoryAtDeparture, island, transition.action_tag, playerInput); setMemory(updated); setResolution(transition.resolution); setAnswer("");
       setScene({ narrative: transition.next_narrative, question: transition.next_question });
-      const next = { ...current, gate: advanceCrossingGate(current.gate, { type: "api-resolved" }), ending: updated.ending };
+      const divineTrigger = getDivineTriggerForResolvedDeparture({ departureIslandIndex: memoryAtDeparture.currentIsland, resolvedCurrentIsland: updated.currentIsland, resolvedEnding: updated.ending }) || undefined;
+      const next = { ...current, gate: advanceCrossingGate(current.gate, { type: "api-resolved" }), ending: updated.ending, divineTrigger, resolvedMemory: updated };
       crossingBusyRef.current = false; updateVoyage(next); settleCrossing(next);
     } catch (error) {
       const current = voyageRef.current; if (!current || current.id !== crossingId) return;
@@ -120,11 +195,20 @@ export default function Home() {
     } catch (e) { setEndingStage("idle"); setPhase("ending"); recordError(e); }
   }
   async function hearHomer() { if (!scene || audioStatus === "loading") return; if (audioStatus === "playing" && audioRef.current) { audioRef.current.pause(); setAudioStatus("ready"); return; } if (audioStatus === "ready" && audioRef.current) { try { await audioRef.current.play(); setAudioStatus("playing"); } catch { setAudioStatus("error"); } return; } setAudioStatus("loading"); try { const response = await fetch("/api/homer/audio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: `${scene.narrative} ${scene.question}` }) }); if (!response.ok) throw new Error(); const url = URL.createObjectURL(await response.blob()); audioUrlRef.current = url; const audio = new Audio(url); audioRef.current = audio; audio.onended = () => setAudioStatus("ready"); audio.onerror = () => setAudioStatus("error"); await audio.play(); setAudioStatus("playing"); } catch { setAudioStatus("error"); } }
-  function resetJourney() { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); sessionStorage.removeItem(SESSION_KEY); crossingBusyRef.current = false; updateVoyage(null); setGoal(""); setPhase("map"); setMemory(null); setScene(null); setAnswer(""); setResolution(""); setSummary(null); setCard(null); setEndingStage("idle"); setErrorMessage(""); setRequestId(""); }
+  function dismissDivinePresence() {
+    const current = divineSessionRef.current;
+    if (!current) return;
+    updateDivineSession(dismissDivineEncounter(current));
+  }
+  function resetJourney() { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); sessionStorage.removeItem(SESSION_KEY); clearDivineSession(sessionStorage); divineRequestRef.current = null; updateDivineSession(null); crossingBusyRef.current = false; updateVoyage(null); setGoal(""); setPhase("map"); setMemory(null); setScene(null); setAnswer(""); setResolution(""); setSummary(null); setCard(null); setEndingStage("idle"); setErrorMessage(""); setRequestId(""); }
 
   if (phase === "map") return <Map goal={goal} setGoal={setGoal} begin={beginJourney} error={errorMessage} />;
   if (!memory || !scene || phase === "loading") return <main className="journey voyage-loading"><p className="eyebrow">THE FIRST SHORE</p><h1>The map remembers your name.</h1><p>Homer gathers the words of your return.</p></main>;
   if (phase === "voyaging" && voyage) return <VoyageOverlay crossing={voyage} reducedMotion={reducedMotion} complete={finishVoyageVisual} retry={retryCrossing}/>;
+  if (divineSession?.active || divineSession?.pending) {
+    const triggerId = divineSession.active?.triggerId || divineSession.pending?.triggerId;
+    if (triggerId) return <DivinePresenceStage key={triggerId} triggerId={triggerId} encounter={divineSession.active} pending={Boolean(divineSession.pending)} onContinue={dismissDivinePresence}/>;
+  }
   if (memory.ending) return <Ending memory={memory} scene={scene} summary={summary} card={card} phase={phase} stage={endingStage} generate={generateEnding} reset={resetJourney} error={errorMessage} />;
 
   const island = getIsland(memory.currentIsland); const index = memory.currentIsland; const presentation = ISLAND_PRESENTATION[island.id];

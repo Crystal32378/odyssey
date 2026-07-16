@@ -8,7 +8,12 @@ import {
   type DivineEncounter,
   type DivineTriggerId,
 } from "../divine.ts";
-import { ISLANDS, type TimelineEntry } from "../journey.ts";
+import {
+  createJourneyMemory,
+  ISLANDS,
+  resolveIsland,
+  type TimelineEntry,
+} from "../journey.ts";
 import {
   EncounterReceiptHashConflictError,
   executeEncounterAtMostOnce,
@@ -133,6 +138,7 @@ export function cleanDivineRequest(raw: unknown): CleanDivineRequest | null {
   if (!homeGoal || !Number.isInteger(currentIslandIndex) || !timeline) return null;
   if (currentIslandIndex !== registry.destinationIslandIndex || timeline.length !== currentIslandIndex) return null;
   if (timeline.length - 1 !== registry.departureIslandIndex) return null;
+  if (!reachesCanonicalDestination(homeGoal, timeline, currentIslandIndex as number)) return null;
   if (getDivineTriggerForResolvedDeparture({
     departureIslandIndex: registry.departureIslandIndex,
     resolvedCurrentIsland: currentIslandIndex as number,
@@ -143,6 +149,20 @@ export function cleanDivineRequest(raw: unknown): CleanDivineRequest | null {
     triggerId: registry.triggerId,
     context: { homeGoal, currentIslandIndex: currentIslandIndex as number, timeline },
   };
+}
+
+function reachesCanonicalDestination(
+  homeGoal: string,
+  timeline: readonly TimelineEntry[],
+  destinationIslandIndex: number,
+) {
+  let memory = createJourneyMemory(homeGoal);
+  for (let index = 0; index < timeline.length; index += 1) {
+    if (memory.ending || memory.currentIsland !== index) return false;
+    const entry = timeline[index];
+    memory = resolveIsland(memory, ISLANDS[index], entry.action, entry.quote);
+  }
+  return !memory.ending && memory.currentIsland === destinationIslandIndex;
 }
 
 export async function hashDivinePayload(payload: CleanDivineRequest) {

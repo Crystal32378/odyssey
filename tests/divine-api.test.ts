@@ -126,6 +126,26 @@ test("a noncanonical timeline, illegal action, or mismatched current island is r
   }
 });
 
+test("a Calypso ending cannot be forged into later Ino or Athena encounters", async () => {
+  let calls = 0;
+  const impossibleIno = bodyAt("calypso_departure", 12);
+  impossibleIno.context.timeline[11].action = "STAY_WITH_CALYPSO";
+  const impossibleAthena = bodyAt("ithaca_threshold", 13);
+  impossibleAthena.context.timeline[11].action = "STAY_WITH_CALYPSO";
+
+  for (const invalid of [impossibleIno, impossibleAthena]) {
+    assert.equal(cleanDivineRequest(invalid), null);
+    const response = await handleDivineRequest(request(invalid), {
+      ledger: new TestLedger(),
+      apiKey: "test-key",
+      logger: quietLogger,
+      fetchImpl: async () => { calls += 1; throw new Error("must not run"); },
+    });
+    assert.equal(response.status, 400);
+  }
+  assert.equal(calls, 0);
+});
+
 test("Terra failure becomes terminal authored fallback and never falls back to Sol", async () => {
   const ledger = new TestLedger();
   const models: unknown[] = [];

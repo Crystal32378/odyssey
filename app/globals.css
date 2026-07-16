@@ -211,3 +211,47 @@ button { cursor: pointer; }
   .journey-summary { margin-top: 42px; font-size: .98rem; line-height: 1.72; }.card { margin-top: 38px; padding: 30px 28px; }.card-heading { align-items: flex-start; gap: 14px; }.journey-card-crest { width: 58px; height: 58px; }.journey-card-fields, .forming-fields { grid-template-columns: 1fr; gap: 18px; }.card blockquote { font-size: 1.08rem; }.card-shores { text-align: left; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }.voyage-map-plane, .voyage-map-plane.is-sailing, .voyage-map-plane.is-preparing { animation: none !important; transform: scale(1) translate3d(-43.5%,-50%,0); }.voyage-map-plane svg, .voyage-vessel-motion { display: none; }.stage-step { opacity: 1 !important; transform: none !important; animation: none !important; }.ritual-memory q, .card-forming, .forming-fields i { animation: none !important; } }
+
+/* Divine Presence mounts only after a voyage has settled; its image is never preloaded by this stage. */
+.divine-presence { min-height: 100svh; position: relative; isolation: isolate; overflow: hidden; display: grid; outline: 0; background: #dbe1df; color: #17313a; }
+.divine-content-right { grid-template-columns: minmax(0,58fr) minmax(360px,42fr); grid-template-areas: "portrait copy"; }
+.divine-content-left { grid-template-columns: minmax(360px,42fr) minmax(0,58fr); grid-template-areas: "copy portrait"; }
+.divine-portrait { grid-area: portrait; min-width: 0; min-height: 100svh; position: relative; overflow: hidden; display: grid; place-items: center; margin: 0; background: #e1e5e2; }
+.divine-portrait img { width: 100%; height: 100svh; display: block; object-fit: contain; object-position: center; opacity: 0; transition: opacity .7s ease-out; }
+.divine-image-ready img { opacity: 1; }
+.divine-portrait figcaption { max-width: 280px; padding: 28px; text-align: center; color: #49626a; animation: divine-copy-enter .55s ease-out both; }
+.divine-portrait figcaption span { color: #76591f; font-size: .62rem; letter-spacing: .18em; }
+.divine-portrait figcaption p { margin: 13px 0 0; font-size: .92rem; line-height: 1.5; }
+.divine-copy { grid-area: copy; min-width: 0; min-height: 100svh; display: grid; align-content: center; padding: clamp(42px,7vh,88px) clamp(34px,4.8vw,88px); border-inline-start: 1px solid rgba(28,61,70,.18); background: #d6dddc; }
+.divine-content-left .divine-copy { border-inline-start: 0; border-inline-end: 1px solid rgba(28,61,70,.18); }
+.divine-kicker { margin: 0; color: #76591f; font-size: .66rem; letter-spacing: .21em; animation: divine-copy-enter .48s ease-out both; }
+.divine-heading { margin-top: 17px; animation: divine-copy-enter .52s .08s ease-out both; }
+.divine-heading h1 { margin: 0; color: #18323b; font-size: clamp(3rem,5.7vw,6.2rem); font-weight: 400; line-height: .93; letter-spacing: 0; overflow-wrap: anywhere; text-wrap: balance; }
+.divine-heading p { max-width: 540px; margin: 20px 0 0; color: #76591f; font-size: .68rem; font-weight: 700; line-height: 1.55; letter-spacing: .17em; }
+.divine-copy blockquote { max-width: 650px; margin: clamp(32px,5vh,58px) 0 0; color: #233b42; font-size: clamp(1.35rem,2vw,2.15rem); font-style: italic; line-height: 1.42; text-wrap: pretty; animation: divine-copy-enter .58s .18s ease-out both; }
+.divine-provenance { max-width: 620px; margin-top: clamp(30px,4vh,48px); border-top: 1px solid rgba(28,61,70,.22); padding-top: 17px; animation: divine-copy-enter .58s .28s ease-out both; }
+.divine-provenance strong { display: block; color: #715d3d; font-size: .58rem; font-weight: 700; line-height: 1.5; letter-spacing: .14em; }
+.divine-provenance p { max-width: 540px; margin: 9px 0 0; color: #455c62; font-size: .72rem; line-height: 1.55; }
+.divine-presence-actions { margin-top: clamp(28px,4.5vh,52px); display: flex; align-items: center; gap: 17px; flex-wrap: wrap; animation: divine-copy-enter .58s .38s ease-out both; }
+.divine-presence-actions button { border: 1px solid #183944; padding: 15px 20px; background: #183944; color: #efe4ca; font-size: .64rem; letter-spacing: .14em; }
+.divine-presence-actions button:hover { border-color: #92713d; background: #92713d; color: #fffaf0; }
+.divine-presence-actions button:focus-visible { outline: 2px solid #92713d; outline-offset: 4px; }
+.divine-presence-actions small { color: #455c62; font-size: .65rem; letter-spacing: .06em; }
+@keyframes divine-copy-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 850px) {
+  .divine-presence, .divine-content-right, .divine-content-left { min-height: 100svh; overflow: visible; grid-template-columns: 1fr; grid-template-areas: "portrait" "copy"; }
+  .divine-portrait { min-height: 55svh; height: 55svh; }
+  .divine-portrait img { width: 100%; height: 55svh; }
+  .divine-copy, .divine-content-left .divine-copy { min-height: auto; padding: 34px 6vw 50px; border-inline: 0; border-top: 1px solid rgba(28,61,70,.18); }
+  .divine-heading h1 { font-size: clamp(3rem,14vw,5rem); }
+  .divine-heading p { margin-top: 15px; }
+  .divine-copy blockquote { margin-top: 29px; font-size: 1.38rem; }
+  .divine-provenance { margin-top: 31px; }
+  .divine-presence-actions { margin-top: 31px; align-items: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .divine-kicker, .divine-heading, .divine-copy blockquote, .divine-provenance, .divine-presence-actions, .divine-portrait figcaption { opacity: 1 !important; transform: none !important; animation: none !important; }
+  .divine-portrait img { transition: none !important; }
+}

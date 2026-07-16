@@ -1,0 +1,80 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+const source = readFileSync(new URL("../app/divine-presence-stage.tsx", import.meta.url), "utf8");
+const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+
+function cssColor(selector: string, property: string) {
+  const start = styles.indexOf(`${selector} {`);
+  assert.notEqual(start, -1, `missing ${selector}`);
+  const end = styles.indexOf("}", start);
+  const declaration = styles.slice(start, end).match(new RegExp(`${property}:\\s*(#[0-9a-f]{6})`, "i"));
+  assert.ok(declaration, `missing ${property} in ${selector}`);
+  return declaration[1];
+}
+
+function relativeLuminance(hex: string) {
+  const channels = [1, 3, 5].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255);
+  const linear = channels.map((channel) => channel <= 0.03928
+    ? channel / 12.92
+    : ((channel + 0.055) / 1.055) ** 2.4);
+  return (0.2126 * linear[0]) + (0.7152 * linear[1]) + (0.0722 * linear[2]);
+}
+
+function contrastRatio(foreground: string, background: string) {
+  const values = [relativeLuminance(foreground), relativeLuminance(background)].sort((a, b) => b - a);
+  return (values[0] + 0.05) / (values[1] + 0.05);
+}
+
+test("Divine Presence shows authored words immediately and never gates continuation", () => {
+  assert.match(source, /const visibleEncounter = encounter \?\?/);
+  assert.match(source, /registry\.fallback\.spokenLine/);
+  assert.match(source, /THE SIGN HAS NOT YET SETTLED/);
+  assert.match(source, /Authored fallback/);
+  assert.match(source, /<button type="button" onClick=\{onContinue\}>/);
+  assert.match(source, /event\.key !== "Escape"/);
+});
+
+test("Divine Presence is a focused full-page interstitial without unsupported modal semantics", () => {
+  const mainStart = source.indexOf("<main");
+  const mainOpening = source.slice(mainStart, source.indexOf(">", mainStart) + 1);
+  assert.match(source, /stageRef\.current\?\.focus\(\)/);
+  assert.match(source, /<main[\s\S]*aria-labelledby="divine-presence-name"/);
+  assert.doesNotMatch(source, /role="dialog"|aria-modal=/);
+  assert.doesNotMatch(mainOpening, /aria-busy=/);
+  assert.match(source, /className="divine-provenance" role="status" aria-live="polite" aria-busy=\{pending\}/);
+});
+
+test("every small Divine label meets WCAG AA contrast", () => {
+  const copyBackground = cssColor(".divine-copy", "background");
+  const portraitBackground = cssColor(".divine-portrait", "background");
+  const checks = [
+    [cssColor(".divine-portrait figcaption span", "color"), portraitBackground],
+    [cssColor(".divine-portrait figcaption", "color"), portraitBackground],
+    [cssColor(".divine-kicker", "color"), copyBackground],
+    [cssColor(".divine-heading p", "color"), copyBackground],
+    [cssColor(".divine-provenance strong", "color"), copyBackground],
+    [cssColor(".divine-provenance p", "color"), copyBackground],
+    [cssColor(".divine-presence-actions small", "color"), copyBackground],
+    [cssColor(".divine-presence-actions button", "color"), cssColor(".divine-presence-actions button", "background")],
+  ];
+  for (const [foreground, background] of checks) {
+    assert.ok(contrastRatio(foreground, background) >= 4.5, `${foreground} on ${background} must meet 4.5:1`);
+  }
+});
+
+test("Divine Presence fetches one async-decoded image only after the stage mounts", () => {
+  assert.equal(source.match(/<img\b/g)?.length, 1);
+  assert.match(source, /src=\{imageSrc\}/);
+  assert.match(source, /decoding="async"/);
+  assert.doesNotMatch(source, /rel="preload"|fetchPriority|new Image\(|<audio\b|new Audio\(/);
+  assert.match(styles, /\.divine-portrait img \{[^}]*object-fit: contain;/);
+});
+
+test("Divine Presence remains complete on mobile and under reduced motion", () => {
+  assert.match(styles, /grid-template-areas: "portrait" "copy";/);
+  assert.match(styles, /\.divine-portrait \{ min-height: 55svh; height: 55svh; \}/);
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.divine-kicker/);
+  assert.match(styles, /\.divine-portrait img \{ transition: none !important; \}/);
+});
