@@ -1,6 +1,6 @@
 # Odyssey visual asset manifest
 
-This manifest is the source of truth for the `feature/visual-polish` island artwork.
+This manifest is the source of truth for Odyssey's narrative visual assets.
 Original source PNGs remain outside the repository; the application consumes optimized WebP derivatives.
 
 ## Rights and provenance
@@ -29,13 +29,13 @@ Framework starter SVGs are not claimed as original Odyssey artwork and retain th
 | Ship token | `/public/assets/ship-token.webp` | Crystal Chang direction; GPT-5.6 Sol with Image 2 | Background removal, alpha repair, WebP conversion, and validation | Crystal Chang; all rights reserved |
 | Journey Card crest | `/public/assets/journey-card-crest.webp` | Crystal Chang direction; GPT-5.6 Sol with Image 2 | Background removal, alpha repair, WebP conversion, and validation | Crystal Chang; all rights reserved |
 | Homer medallion | `/public/assets/homer-medallion.webp` | Crystal Chang direction; GPT-5.6 Sol with Image 2 | Background removal, alpha repair, WebP conversion, and validation | Crystal Chang; all rights reserved |
-| Ino source artwork | Not yet shipped in the repository | Crystal Chang direction; GPT-5.6 Sol with Image 2 | No production derivative shipped yet | Crystal Chang; all rights reserved |
+| Six Divine Presence portraits | `/public/divine/v1/*.webp` | Crystal Chang direction; GPT-5.6 Sol with Image 2; source PNGs `Zeus.png`, `Poseidon.png`, `Athena.png`, `Hermes.png`, `Helios.png`, and `Ino.png` remain outside the repository | Versioned WebP optimization, mapping, and delivery validation | Crystal Chang; all rights reserved |
 | Starter SVGs | `/public/favicon.svg`, `/public/file.svg`, `/public/globe.svg`, `/public/window.svg` | Project starter scaffold | None claimed as Odyssey creative work | Applicable upstream terms |
 
 ## Visual systems
 
 - Mortal journey: dark classical narrative paintings, human choices, sea, fire, smoke, dusk, and weathered earth.
-- Divine order: ivory marble, pale Aegean blue, mist, relief, and restrained gold. Reserved for a later phase.
+- Divine order: ivory marble, pale Aegean blue, mist, relief, and restrained gold. Used only for bounded Divine Presence encounters.
 - Homepage: the threshold between both systems. Its locked map composition is not redesigned in this phase.
 
 ## Island mapping
@@ -77,3 +77,16 @@ The supplied PNGs contained a baked checkerboard and no alpha channel. Non-destr
 | Homer medallion | `/assets/homer-medallion.webp` | Production-ready and used as the restrained Homer audio marker. |
 
 Original source files remain untouched outside the repository.
+
+## Divine Presence derivatives
+
+All six Gate 4 portraits are VP8 WebP derivatives at `1122 x 1402`. Their combined delivery size is exactly `998,934` bytes (`0.953 MiB`), reduced from `15,087,140` bytes of source PNGs. Source basenames are recorded above without publishing private workstation paths.
+
+| Deity | App path | Bytes | SHA-256 |
+|---|---|---:|---|
+| Athena | `/divine/v1/athena.webp` | 167,724 | `c13f0c5c1d86f092617b3cee0cb46d595c34a66597cd3bf17271d850c89da685` |
+| Helios | `/divine/v1/helios.webp` | 183,284 | `f94f143c9a2184a19388d32fe7bcf5afe34d50203340771daba536acfeb760fd` |
+| Hermes | `/divine/v1/hermes.webp` | 148,174 | `3d6230f1465327534b37d281d4baed5b765fdb4d88c48b1c8bc7aeff7ec8595b` |
+| Ino / Leucothea | `/divine/v1/ino.webp` | 174,106 | `06681041c313b50567b1ad92aed6647006740ab1795f71bc4e585424ad589edd` |
+| Poseidon | `/divine/v1/poseidon.webp` | 160,156 | `f64579cacb31fd96731dcbc0eccd22435fc4e0e65cb35fef8cd3d41104c599cf` |
+| Zeus | `/divine/v1/zeus.webp` | 165,490 | `57982a27c895e32a450d18d62c18041bf915ae044ad1dbd04c3628ad078f48a8` |

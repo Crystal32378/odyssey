@@ -113,7 +113,7 @@ These are required for shipping but are not separate product pillars:
 | Judging availability | Keep the public judging build working through 2026-08-05 | Deployment monitoring record | Pending |
 | Additional information | Submitter, residence, representative, team, track, URLs, testing instructions | Final submission checklist | Pending |
 | Team eligibility | Crystal is expected representative; Kim requires real documented contribution if she joins | Team decision and contribution record | Pending |
-| Support disclosure | Determine whether prior API credits affect the support clause | Rules-based eligibility note | Pending |
+| Support disclosure | General-purpose API credits or subscription access not provided specifically for Odyssey are not project support under the cited clause | Official Build Week Discord confirmation and preserved Devpost discussion, 2026-07-14 | Closed |
 
 ## 5. Change evidence log
 
@@ -123,6 +123,9 @@ Add one row for every meaningful competition-period change.
 |---|---|---|---|---|---|---|
 | 2026-07-13 | PR #8 boundary Preview maintenance | [#8](https://github.com/Crystal32378/odyssey/pull/8) | `6f74f9f` | Separate maintenance thread | 16 tests, build, asset checks recorded in PR | Preview verification pending after `main` deployment |
 | 2026-07-14 | Evidence record initialized and corrected | [#10](https://github.com/Crystal32378/odyssey/pull/10) | Pending merge | Evidence-planning thread; not primary `/feedback` candidate | Documentation-only review | N/A |
+| 2026-07-14 | Gate 2: explicit Sol model, complete island art, cover correction, and Ending Ritual | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `5ef1975` through `7d62b51` | Principal implementation thread | 20 tests, lint, production build | Public Preview Gate 2; evidence in PR #12 |
+| 2026-07-15 | Gate 3.2: compositor voyage camera and six-beat arrival ritual | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `8d63e4f`, `e92e321` | Principal implementation thread | 34 tests; Firefox, Chrome, Safari, mobile, reduced motion, recovery, fourteen shores | Version `690f7ed3-8c9f-460f-a883-58af7fce2d99`; Crystal PASS |
+| 2026-07-16 | Gate 4: D1-backed Terra Divine Presence Layer | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `a967a38` through `b4fac14` | Principal implementation thread | 77 tests, lint, build, D1 concurrency, six-trigger route, public browser QA | Version `045777b3-ba8c-4ca6-9f14-5b0b23e1e53a`; tag `gate4-divine-b4fac14`; Crystal acceptance pending |
 
 ## 6. Codex evidence
 
@@ -148,15 +151,33 @@ Every claim must be supported by code and a testable product path.
 
 | Evidence | Location or link | Status |
 |---|---|---|
-| exact model configuration | Pending | Pending |
-| API call site | Pending | Pending |
-| structured input and output contract | Pending | Pending |
-| Journey Memory grounding | Pending | Pending |
-| failure and fallback behavior | Pending | Pending |
-| actual Preview model verification | Pending | Pending |
-| visible demo behavior | Pending | Pending |
+| exact model configuration | `lib/server/divine-handler.ts`, `.env.local.example` | Sol and Terra explicit; model-set preflight verified |
+| API call site | `app/api/homer/route.ts`, `lib/server/divine-handler.ts` | Implemented and tested |
+| structured input and output contract | Homer phase schemas plus `lib/divine.ts` and `lib/server/divine-handler.ts` | Strict schema plus manual server validation |
+| Journey Memory grounding | Bounded Homer payload plus last four eligible Divine memory references | Implemented and tested |
+| failure and fallback behavior | Homer client retry paths; authored per-deity Divine fallbacks | Implemented and tested |
+| actual Preview model verification | Gate 1 Sol verification and Gate 4 generated Terra receipts | Verified on public Preview |
+| visible demo behavior | Homer cross-island witness, voyage/arrival ritual, generated Poseidon stage | Public Preview verified; final demo capture pending |
 
-## 8. Verification record
+## 8. Gate 4 Divine Presence verification
+
+**Branch head at deployment:** `b4fac14`
+
+**Public Preview Version:** `045777b3-ba8c-4ca6-9f14-5b0b23e1e53a`
+
+**Cloudflare deployment tag:** `gate4-divine-b4fac14`
+
+- The full Ithaca route generated exactly six Terra encounters: Poseidon, Hermes, Helios, Zeus, Ino / Leucothea, and Athena.
+- The Calypso ending is contract-tested to show only the four gods actually reached; it does not manufacture Ino or Athena after the route ends.
+- Twenty simultaneous public requests for one receipt produced one `200` winner, nineteen `202` pending responses, and exactly one Terra completion; the cached retry returned the same generated result.
+- Reusing the same receipt key with a different payload hash returned `409 DIVINE_RECEIPT_CONFLICT`.
+- Public D1 inspection recorded one receipt for the concurrency proof and six distinct generated receipts for the full-route proof.
+- Public browser review confirmed a generated Poseidon stage, complete AI disclosure, zero console errors, identical text after refresh, and a clean continuation to Aeolia without replay.
+- Desktop and mobile Divine layouts passed visual review. Reduced-motion content and semantics are covered by automated presentation tests; no browser media-emulation screenshot is claimed for this gate.
+- Gate 3.2's four-second voyage and six-beat arrival contracts, `lib/journey.ts`, and `lib/voyage.ts` remain unchanged.
+- Divine audio and sound cues were intentionally deferred so audio QA could not weaken the text, visual, fallback, D1, or Firefox performance gate.
+
+## 9. Verification record
 
 For every implementation PR, preserve:
 
@@ -172,7 +193,7 @@ For every implementation PR, preserve:
 - corresponding judging criterion
 - Codex thread
 
-## 9. Submission claim audit
+## 10. Submission claim audit
 
 Before final submission, classify every statement as one of:
 
@@ -183,7 +204,7 @@ Before final submission, classify every statement as one of:
 
 No target-scope or future item may be written as a current capability.
 
-## 10. Final submission checklist
+## 11. Final submission checklist
 
 - [ ] working public Preview
 - [ ] category confirmed: Apps for Your Life
@@ -200,7 +221,7 @@ No target-scope or future item may be written as a current capability.
 - [ ] final submission completed during Taipei daytime on July 21
 - [ ] Preview maintained through the judging period
 
-## 11. Evidence standard
+## 12. Evidence standard
 
 A final claim is acceptable only when supported by at least one primary artifact:
 
