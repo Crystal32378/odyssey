@@ -39,8 +39,10 @@ test("the optimized approved asset is the recorded immutable derivative", () => 
 });
 
 test("desktop, mobile, image-failure, and reduced-motion presentation remain complete", () => {
-  assert.match(styles, /\.penelope-recognition \{[^}]*min-height:[^}]*overflow: hidden;[^}]*display: grid;/);
+  assert.match(styles, /\.penelope-recognition \{[^}]*width: calc\(100% \+ 2 \* max\(6vw,24px\)\);[^}]*overflow: hidden;[^}]*border: 0;[^}]*box-shadow: none;/);
   assert.match(styles, /\.penelope-image-failed \{[^}]*background:/);
-  assert.match(styles, /@media \(max-width: 850px\)[\s\S]*\.penelope-recognition \{[^}]*min-height: 650px;/);
+  assert.match(styles, /@media \(max-width: 850px\)[\s\S]*\.penelope-recognition \{[^}]*min-height: 100svh;/);
+  assert.match(styles, /\.ending-ithaca \.penelope-recognition ~ \.restart \{[^}]*background: transparent;/);
+  assert.match(styles, /\.ending-ithaca \.penelope-recognition ~ \.restart:focus-visible \{[^}]*outline:/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.penelope-recognition img, \.penelope-copy \{[^}]*animation: none !important;/);
 });

@@ -160,16 +160,19 @@ button { cursor: pointer; }
 .journey-card-fields div { display: grid; gap: 7px; }.journey-card-fields dt { color: var(--gold); font-size: .6rem; letter-spacing: .15em; }.journey-card-fields dd { margin: 0; color: #c7d1ce; line-height: 1.45; }
 .journey-end-error { color: #d7ad9d; line-height: 1.6; }.journey-end-error button { border: 0; border-bottom: 1px solid currentColor; background: transparent; color: inherit; }.restart:disabled { cursor: wait; opacity: .45; }
 .ending > .timeline-note { margin: 22px 0 0; }
-.penelope-recognition { position: relative; isolation: isolate; width: min(100%,1000px); min-height: clamp(440px,56vw,563px); margin: 56px auto 34px; overflow: hidden; display: grid; align-items: center; border: 1px solid rgba(178,143,83,.52); background: #090d0f; text-align: left; box-shadow: 0 28px 80px #0009; }
+.penelope-recognition { position: relative; isolation: isolate; width: calc(100% + 2 * max(6vw,24px)); min-height: clamp(560px,72vw,760px); margin: 64px calc(-1 * max(6vw,24px)) 38px; overflow: hidden; display: grid; align-items: center; border: 0; background: #090d0f; text-align: left; box-shadow: none; }
 .penelope-recognition img { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; animation: penelope-image-settle .8s ease-out both; }
 .penelope-veil { position: absolute; z-index: -1; inset: 0; background: linear-gradient(90deg,rgba(4,8,10,.94) 0%,rgba(5,9,11,.84) 34%,rgba(5,9,11,.34) 61%,rgba(5,9,11,.08) 100%); }
 .penelope-image-failed { min-height: 410px; background: radial-gradient(circle at 72% 45%,#20201d 0%,#0d1315 38%,#080b0c 76%); }
 .penelope-image-failed .penelope-veil { background: linear-gradient(90deg,rgba(4,8,10,.96),rgba(7,11,12,.62)); }
-.penelope-copy { width: min(53%,520px); padding: clamp(38px,6vw,72px); animation: penelope-copy-reveal .62s ease-out both; }
+.penelope-copy { width: min(50%,580px); margin-left: max(6vw,24px); padding: clamp(42px,6vw,78px) 0; animation: penelope-copy-reveal .62s ease-out both; }
 .penelope-kicker { margin: 0; color: #c5a66b; font-size: .62rem; letter-spacing: .19em; }
 .penelope-copy h2 { margin: 18px 0 0; color: #eee6d4; font-size: clamp(3rem,6vw,5.7rem); font-weight: 400; line-height: .92; }
 .penelope-mark { margin: 23px 0 0; color: #d1b57e; font-size: .65rem; font-weight: 700; letter-spacing: .17em; }
 .penelope-copy blockquote { margin: 34px 0 0; color: #d7dfdc; font-size: clamp(1.2rem,2vw,1.72rem); font-style: italic; line-height: 1.5; text-wrap: pretty; }
+.ending-ithaca .penelope-recognition ~ .restart { border: 0; border-bottom: 1px solid rgba(197,166,107,.55); padding: 4px 0; background: transparent; color: #a99a7d; font-size: .62rem; letter-spacing: .14em; }
+.ending-ithaca .penelope-recognition ~ .restart:hover { border-color: #d1b57e; color: #d1b57e; }
+.ending-ithaca .penelope-recognition ~ .restart:focus-visible { outline: 2px solid #d1b57e; outline-offset: 5px; }
 @keyframes shore-arrival { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes painting-settle { from { opacity: .48; transform: scale(1.045); } to { opacity: 1; transform: scale(1.018); } }
 @keyframes stage-reveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -221,10 +224,10 @@ button { cursor: pointer; }
   .ending { padding: 8vh 8vw 60px; }.ending h1 { font-size: clamp(3rem,16vw,4.3rem); line-height: 1.02; }.ending-lede { font-size: 1rem; }
   .ending-ritual { margin-top: 36px; padding-block: 22px; }.ritual-heading { display: grid; gap: 8px; }.ritual-shores { grid-template-columns: repeat(7,minmax(0,1fr)); row-gap: 17px; }.ritual-memory { min-height: 96px; }
   .journey-summary { margin-top: 42px; font-size: .98rem; line-height: 1.72; }.card { margin-top: 38px; padding: 30px 28px; }.card-heading { align-items: flex-start; gap: 14px; }.journey-card-crest { width: 58px; height: 58px; }.journey-card-fields, .forming-fields { grid-template-columns: 1fr; gap: 18px; }.card blockquote { font-size: 1.08rem; }.card-shores { text-align: left; }
-  .penelope-recognition { min-height: 650px; margin-top: 42px; align-items: end; }
-  .penelope-recognition img { object-position: 66% center; }
+  .penelope-recognition { width: calc(100% + 16vw); min-height: 100svh; margin: 42px -8vw 34px; align-items: end; }
+  .penelope-recognition img { object-position: 70% center; }
   .penelope-veil { background: linear-gradient(0deg,rgba(4,8,10,.98) 0%,rgba(5,9,11,.8) 38%,rgba(5,9,11,.12) 76%); }
-  .penelope-copy { width: 100%; padding: 38px 28px 42px; }
+  .penelope-copy { width: auto; margin: 0; padding: 40px 8vw 50px; }
   .penelope-copy h2 { font-size: clamp(3rem,15vw,4.7rem); }
   .penelope-copy blockquote { margin-top: 26px; font-size: 1.2rem; }
 }
