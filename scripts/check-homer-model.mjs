@@ -6,6 +6,7 @@ const root = process.cwd();
 const cacheDir = path.join(root, ".odyssey-cache");
 const cachePath = path.join(cacheDir, "homer-model-check.json");
 const today = new Date().toISOString().slice(0, 10);
+export const LUNA_RUNTIME_MODEL = "gpt-5.6-luna";
 
 function loadEnvFile() {
   const target = path.join(root, ".env.local");
@@ -55,10 +56,15 @@ async function checkModel(model) {
 }
 
 export function requiredModelSet(environment = process.env) {
+  if (environment.LUNA_MODEL && environment.LUNA_MODEL !== LUNA_RUNTIME_MODEL) {
+    throw new Error(
+      `LUNA_MODEL must match the server runtime model (${LUNA_RUNTIME_MODEL}).`,
+    );
+  }
   return [...new Set([
     environment.HOMER_MODEL || "gpt-5.6-sol",
     environment.DIVINE_MODEL || "gpt-5.6-terra",
-    environment.LUNA_MODEL || "gpt-5.6-luna",
+    LUNA_RUNTIME_MODEL,
     environment.HOMER_MODEL_CANDIDATE,
     environment.HOMER_MODEL_FALLBACK || "gpt-5.5",
   ].filter(Boolean))].sort();

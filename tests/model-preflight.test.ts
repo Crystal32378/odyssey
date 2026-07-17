@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { modelSetCacheMatches, requiredModelSet } from "../scripts/check-homer-model.mjs";
+import { LUNA_MODEL } from "../lib/server/luna-handler.ts";
+import {
+  LUNA_RUNTIME_MODEL,
+  modelSetCacheMatches,
+  requiredModelSet,
+} from "../scripts/check-homer-model.mjs";
 
 test("model preflight key contains the complete requested model set", () => {
   assert.deepEqual(requiredModelSet({
@@ -18,4 +23,12 @@ test("a same-day cache cannot hide a newly requested model", () => {
   assert.equal(modelSetCacheMatches(cached, date, cached.models), true);
   assert.equal(modelSetCacheMatches(cached, date, [...cached.models, "gpt-5.6-luna"]), false);
   assert.equal(modelSetCacheMatches({ date }, date, cached.models), false);
+});
+
+test("Luna preflight cannot test a model different from the fixed runtime model", () => {
+  assert.equal(LUNA_RUNTIME_MODEL, LUNA_MODEL);
+  assert.throws(
+    () => requiredModelSet({ LUNA_MODEL: "gpt-5.6-luna-candidate" }),
+    /must match the server runtime model \(gpt-5\.6-luna\)/,
+  );
 });
