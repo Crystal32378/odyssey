@@ -55,8 +55,9 @@ function bodyAt(index: number) {
   const memory = atIsland(index);
   return { journeyId: JOURNEY_ID, context: { homeGoal: memory.homeGoal, currentIslandIndex: index, timeline: memory.timeline } };
 }
-function lunaResponse(output: unknown) {
+function lunaResponse(output: unknown, metadata: Record<string, unknown> = {}) {
   return new Response(JSON.stringify({
+    ...metadata,
     output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify(output) }] }],
   }), { status: 200, headers: { "content-type": "application/json", "x-request-id": "req_server_only" } });
 }
@@ -95,6 +96,56 @@ test("each canonical threshold infers its server-owned actor and fixed Luna mode
     assert.equal(format.strict, true);
     assert.deepEqual((format.schema as { required: string[] }).required, ["spokenLine", "memoryRefs"]);
   }
+});
+
+test("the receipt owner retries one incomplete generation and persists only the valid retry", async () => {
+  const ledger = new TestLedger();
+  const outputs = [
+    "You may remain sheltered, or let this stillness be",
+    "You may remain sheltered, or let this stillness reveal the cost of staying.",
+  ];
+  let calls = 0;
+  const response = await handleLunaRequest(request(bodyAt(11)), {
+    ledger, apiKey: "test-key", logger: quietLogger,
+    fetchImpl: async () => lunaResponse({ spokenLine: outputs[calls++], memoryRefs: [] }),
+  });
+  const body = await response.json();
+  assert.equal(calls, 2);
+  assert.equal(body.spokenLine, outputs[1]);
+  assert.equal(body.source, "generated");
+  assert.equal(ledger.settled?.status, "ready");
+  assert.equal((ledger.settled?.value as { spokenLine: string }).spokenLine, outputs[1]);
+});
+
+test("two malformed generations settle the existing authored fallback", async () => {
+  const ledger = new TestLedger();
+  const failures = ["even when the hand that-—", "The shore remains open because"];
+  let calls = 0;
+  const response = await handleLunaRequest(request(bodyAt(6)), {
+    ledger, apiKey: "test-key", logger: quietLogger,
+    fetchImpl: async () => lunaResponse({ spokenLine: failures[calls++], memoryRefs: [] }),
+  });
+  const body = await response.json();
+  assert.equal(calls, 2);
+  assert.equal(body.source, "authored_fallback");
+  assert.equal(ledger.settled?.status, "authored_fallback");
+});
+
+test("model truncation metadata and unclosed structures cannot become ready receipts", async () => {
+  const ledger = new TestLedger();
+  let calls = 0;
+  const response = await handleLunaRequest(request(bodyAt(8)), {
+    ledger, apiKey: "test-key", logger: quietLogger,
+    fetchImpl: async () => {
+      calls += 1;
+      return calls === 1
+        ? lunaResponse({ spokenLine: "A complete-looking sentence.", memoryRefs: [] }, { status: "incomplete", incomplete_details: { reason: "max_output_tokens" } })
+        : lunaResponse({ spokenLine: "We offer [the answer without its ending.", memoryRefs: [] });
+    },
+  });
+  assert.equal(calls, 2);
+  assert.equal((await response.json()).source, "authored_fallback");
+  assert.equal(ledger.settled?.status, "authored_fallback");
 });
 
 test("browser authority overrides and noncanonical thresholds are rejected before model use", async () => {

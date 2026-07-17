@@ -118,7 +118,7 @@ export function isLunaTriggerId(value: string): value is LunaTriggerId {
 export function validateLunaModelOutput(raw: unknown, allowedMemoryRefs: readonly string[]): LunaModelOutput | null {
   if (!isRecord(raw) || !hasExactKeys(raw, ["memoryRefs", "spokenLine"])) return null;
   const spokenLine = cleanSingleLine(raw.spokenLine, 280);
-  if (!spokenLine || countSentenceEndings(spokenLine) > 2) return null;
+  if (!spokenLine || countSentenceEndings(spokenLine) > 2 || !isCompleteLunaSpokenLine(spokenLine)) return null;
   if (!Array.isArray(raw.memoryRefs) || raw.memoryRefs.length > 2) return null;
 
   const allowlist = new Set(allowedMemoryRefs);
@@ -128,6 +128,26 @@ export function validateLunaModelOutput(raw: unknown, allowedMemoryRefs: readonl
     memoryRefs.push(reference);
   }
   return { spokenLine, memoryRefs };
+}
+
+export function isCompleteLunaSpokenLine(value: string): boolean {
+  const line = value.trim();
+  if (!line || /[-‐‑‒–—]\s*$/.test(line)) return false;
+  if (!/[.!?…]["'’”)}\]]*$/.test(line)) return false;
+
+  const withoutClosers = line.replace(/[.!?…]["'’”)}\]]*$/, "").trim();
+  const lastWord = withoutClosers.match(/([A-Za-z]+)$/)?.[1]?.toLowerCase();
+  if (lastWord && new Set([
+    "and", "or", "but", "nor", "so", "yet", "for", "to", "of", "in", "on", "at", "by", "with",
+    "from", "into", "onto", "over", "under", "through", "across", "before", "after", "while", "if",
+    "when", "that", "which", "who", "whose", "where", "as", "than", "because",
+  ]).has(lastWord)) return false;
+
+  return hasBalancedPairs(line, "(", ")")
+    && hasBalancedPairs(line, "[", "]")
+    && hasBalancedPairs(line, "{", "}")
+    && hasBalancedPairs(line, "“", "”")
+    && (line.match(/"/g)?.length ?? 0) % 2 === 0;
 }
 
 export function composeLunaEncounter(
@@ -192,6 +212,15 @@ function cleanSingleLine(value: unknown, maxLength: number) {
 
 function countSentenceEndings(value: string) {
   return value.match(/[.!?](?=(?:["'’”])?(?:\s|$))/g)?.length ?? 0;
+}
+
+function hasBalancedPairs(value: string, open: string, close: string) {
+  let depth = 0;
+  for (const character of value) {
+    if (character === open) depth += 1;
+    if (character === close && --depth < 0) return false;
+  }
+  return depth === 0;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

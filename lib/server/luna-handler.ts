@@ -38,7 +38,9 @@ export interface LunaHandlerDependencies {
 }
 
 interface OpenAIResponseBody {
-  output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>;
+  status?: string;
+  incomplete_details?: unknown;
+  output?: Array<{ type?: string; status?: string; content?: Array<{ type?: string; text?: string }> }>;
 }
 
 const SERVER_PROMPTS: Readonly<Record<LunaTriggerId, { persona: string; lore: string }>> = Object.freeze({
@@ -141,9 +143,13 @@ async function invokeLuna(payload: CleanLunaRequest, dependencies: LunaHandlerDe
   const memory = compressedMemory(payload.context.timeline);
   const allowedMemoryRefs = memory.map((item) => item.ref);
   const prompt = SERVER_PROMPTS[payload.triggerId];
-  const controller = new AbortController();
+  const deadlineAt = Date.now() + timeoutMs;
 
-  const result = await withAbortTimeout((async () => {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const remainingMs = deadlineAt - Date.now();
+    if (remainingMs <= 0) throw new DOMException("The Luna request exceeded its authoritative window.", "TimeoutError");
+    const controller = new AbortController();
+    const result = await withAbortTimeout((async () => {
     const response = await fetchImpl("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${dependencies.apiKey}` },
@@ -190,28 +196,23 @@ async function invokeLuna(payload: CleanLunaRequest, dependencies: LunaHandlerDe
       throw new Error("Luna request failed.");
     }
     return { requestId, body: await response.json() as OpenAIResponseBody };
-  })(), controller, timeoutMs);
+    })(), controller, remainingMs);
 
-  const rawText = outputText(result.body);
-  if (!rawText) {
-    dependencies.logger?.error("Luna returned no structured output", { requestId: result.requestId, triggerId: registry.triggerId });
-    throw new Error("Luna returned no output.");
-  }
+    const rawText = outputText(result.body);
+    let rawOutput: unknown = null;
+    if (rawText) {
+      try { rawOutput = JSON.parse(rawText); } catch { /* Invalid output is retried once by the receipt owner. */ }
+    }
 
-  let rawOutput: unknown;
-  try {
-    rawOutput = JSON.parse(rawText);
-  } catch {
-    dependencies.logger?.error("Luna returned malformed JSON", { requestId: result.requestId, triggerId: registry.triggerId });
-    throw new Error("Luna returned malformed JSON.");
+    if (!isIncompleteLunaResponse(result.body) && validateLunaModelOutput(rawOutput, allowedMemoryRefs)) {
+      dependencies.logger?.info("Luna threshold completed", { requestId: result.requestId, triggerId: registry.triggerId, attempt: attempt + 1 });
+      return composeLunaEncounter(payload.triggerId, rawOutput, allowedMemoryRefs);
+    }
+    dependencies.logger?.error("Luna returned incomplete or invalid structured output", {
+      requestId: result.requestId, triggerId: registry.triggerId, attempt: attempt + 1,
+    });
   }
-  if (!validateLunaModelOutput(rawOutput, allowedMemoryRefs)) {
-    dependencies.logger?.error("Luna returned invalid structured output", { requestId: result.requestId, triggerId: registry.triggerId });
-    throw new Error("Luna returned invalid structured output.");
-  }
-
-  dependencies.logger?.info("Luna threshold completed", { requestId: result.requestId, triggerId: registry.triggerId });
-  return composeLunaEncounter(payload.triggerId, rawOutput, allowedMemoryRefs);
+  throw new Error("Luna returned incomplete or invalid structured output twice.");
 }
 
 function reachesCanonicalThreshold(homeGoal: string, timeline: readonly TimelineEntry[], islandIndex: number) {
@@ -291,6 +292,12 @@ async function withAbortTimeout<T>(operation: Promise<T>, controller: AbortContr
 
 function outputText(data: OpenAIResponseBody) {
   return data.output?.find((item) => item.type === "message")?.content?.find((item) => item.type === "output_text")?.text;
+}
+
+function isIncompleteLunaResponse(data: OpenAIResponseBody) {
+  return data.status === "incomplete"
+    || data.incomplete_details != null
+    || Boolean(data.output?.some((item) => item.status === "incomplete"));
 }
 
 function cleanJourneyId(value: unknown) {
