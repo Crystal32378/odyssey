@@ -31,6 +31,7 @@ Framework starter SVGs are not claimed as original Odyssey artwork and retain th
 | Homer medallion | `/public/assets/homer-medallion.webp` | Crystal Chang direction; GPT-5.6 Sol with Image 2 | Background removal, alpha repair, WebP conversion, and validation | Crystal Chang; all rights reserved |
 | Six Divine Presence portraits | `/public/divine/v1/*.webp` | Crystal Chang direction; GPT-5.6 Sol with Image 2; source PNGs `Zeus.png`, `Poseidon.png`, `Athena.png`, `Hermes.png`, `Helios.png`, and `Ino.png` remain outside the repository | Versioned WebP optimization, mapping, and delivery validation | Crystal Chang; all rights reserved |
 | Penelope Recognition portrait | `/public/characters/v1/penelope.webp` | Crystal Chang supplied and approved source PNG `Penelope.png`; generated in Crystal's 2026-07-16 ChatGPT session against the approved Odyssey visual canon; original remains outside the repository | Versioned WebP optimization and delivery validation | Crystal Chang; all rights reserved |
+| Three Luna threshold tokens | `/public/luna/v1/*.webp` | Crystal Chang supplied and approved source PNGs `Wine.png`, `Tail.png`, and `Veil.png`; generated in Crystal's 2026-07-16 ChatGPT session against the approved Odyssey visual canon; originals remain outside the repository | Versioned WebP optimization and delivery validation | Crystal Chang; all rights reserved |
 | Starter SVGs | `/public/favicon.svg`, `/public/file.svg`, `/public/globe.svg`, `/public/window.svg` | Project starter scaffold | None claimed as Odyssey creative work | Applicable upstream terms |
 
 ## Visual systems
@@ -99,3 +100,13 @@ All six Gate 4 portraits are VP8 WebP derivatives at `1122 x 1402`. Their combin
 | Ino / Leucothea | `/divine/v1/ino.webp` | 174,106 | `06681041c313b50567b1ad92aed6647006740ab1795f71bc4e585424ad589edd` |
 | Poseidon | `/divine/v1/poseidon.webp` | 160,156 | `f64579cacb31fd96731dcbc0eccd22435fc4e0e65cb35fef8cd3d41104c599cf` |
 | Zeus | `/divine/v1/zeus.webp` | 165,490 | `57982a27c895e32a450d18d62c18041bf915ae044ad1dbd04c3628ad078f48a8` |
+
+## Luna threshold derivatives
+
+The three Gate 5B threshold sources were supplied and approved by Crystal Chang. They contain no external third-party assets. Each original is a `1254 x 1254` PNG and remains outside the repository.
+
+| Threshold | Source SHA-256 | App path | Dimensions | Bytes | Derivative SHA-256 |
+|---|---|---|---:|---:|---|
+| Circe wine | `b73e1b9658d2f241a0a9289600385617f62349d823d0d931bf9fdc8d6bd8f511` | `/luna/v1/wine.webp` | `512 x 512` | 13,082 | `9439fe9d4b6faa8abc8fabc5750c6e9bf6d2883c794cb956e912755a037475cf` |
+| Sirens tail | `15ce9c8a33bc4db9f7f39df6dfa67836b193dc8f5c06d7e4860876faaceec85a` | `/luna/v1/tail.webp` | `512 x 512` | 7,770 | `d70770d23874693583f513f4212b0492ca8be8cafe4398f2c954383015abc0ea` |
+| Calypso veil | `a6a55fc7281a8d572de3a8124e18d7b9054b2baa5f591cb35e5ea8b7fe535965` | `/luna/v1/veil.webp` | `512 x 512` | 6,902 | `f1daaf9d0dd5dadc293a44f5d21f122e712767ffc4ce4d93b709142696d7e4b0` |
