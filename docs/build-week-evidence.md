@@ -107,7 +107,7 @@ These are required for shipping but are not separate product pillars:
 | Demo content | Show the working project and specifically explain Codex and GPT-5.6 use | Shot list and timestamp map | Pending |
 | Repository | Public with an appropriate license, or private with designated judge access | Repo visibility and license | License pending |
 | README | Setup, environment, run, test, architecture, GPT-5.6, Codex, decisions, baseline, additions, limitations, and demo path | README audit | Pending |
-| Codex evidence | Submit `/feedback` Session ID from the principal implementation thread | Session ID and representative work links | Pending |
+| Codex evidence | Submit `/feedback` Session ID from the principal implementation thread | Session ID and representative work links | Recorded: `019f5bfb-c01b-7211-8d17-c7556d6f0d6f` |
 | Project media | Thumbnail and a small gallery that explains the product | Final image list and source rights check | Pending |
 | Truthful claims | Pre-existing work cannot be presented as Build Week work | This ledger plus PR and commit timestamps | In force |
 | Judging availability | Keep the public judging build working through 2026-08-05 | Deployment monitoring record | Pending |
@@ -132,9 +132,10 @@ Add one row for every meaningful competition-period change.
 
 ### Primary implementation thread
 
-- **Thread:** Pending
-- **`/feedback` Session ID:** Pending
-- **Why this thread is representative:** It must contain the majority of core Build Week implementation, testing, and Preview verification.
+- **Thread:** Desktop Codex principal task `BuildWeekJul.14/15/16/17`
+- **`/feedback` Session ID:** `019f5bfb-c01b-7211-8d17-c7556d6f0d6f`
+- **Recorded:** 2026-07-17 after the Gate 4.1 checkpoint and independent CLI credential separation
+- **Why this thread is representative:** It contains the majority of Odyssey's Build Week planning, core implementation, testing, debugging, Cloudflare Preview deployment, evidence maintenance, and the Gate 4.1 handoff. The isolated Cursor CLI session was not used as the primary record because it had not yet performed Luna or other paid engineering work when this ID was captured.
 
 Do not use a scope-only, checklist-only, read-only review, or isolated maintenance session as the primary `/feedback` evidence.
 
@@ -242,7 +243,7 @@ No target-scope or future item may be written as a current capability.
 - [ ] Codex acceleration explained with concrete examples
 - [ ] key product, design, and engineering decisions documented
 - [ ] GPT-5.6 integration meaningful and verifiable
-- [ ] principal `/feedback` Session ID recorded
+- [x] principal `/feedback` Session ID recorded: `019f5bfb-c01b-7211-8d17-c7556d6f0d6f`
 - [ ] public YouTube demo is no more than 3 minutes
 - [ ] audible English narration explains the product, Codex, and GPT-5.6
 - [ ] demo, README, repository, gallery, and Devpost copy make consistent claims
