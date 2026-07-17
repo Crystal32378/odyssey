@@ -10,6 +10,7 @@ interface ReceiptRow {
   payload_hash: string;
   status: "pending" | "ready" | "authored_fallback";
   result_json: string | null;
+  created_at: number;
   updated_at: number;
 }
 
@@ -81,7 +82,7 @@ export class D1EncounterReceiptLedger implements EncounterReceiptLedger {
 
     let row = await bindKey(
       this.db.prepare(
-        "SELECT payload_hash, status, result_json, updated_at FROM encounter_receipts WHERE journey_id = ? AND layer = ? AND trigger_id = ?",
+        "SELECT payload_hash, status, result_json, created_at, updated_at FROM encounter_receipts WHERE journey_id = ? AND layer = ? AND trigger_id = ?",
       ),
       key,
     ).first<ReceiptRow>();
@@ -90,13 +91,13 @@ export class D1EncounterReceiptLedger implements EncounterReceiptLedger {
     if (row.payload_hash !== input.payloadHash) return { kind: "hash_conflict" };
     if (row.status !== "pending") return terminalReservation<T>(row);
 
-    if (row.updated_at <= input.stalePendingBeforeMs) {
+    if (row.created_at <= input.stalePendingBeforeMs) {
       const expired = await this.db
         .prepare(
           `UPDATE encounter_receipts
               SET status = 'authored_fallback', result_json = ?, updated_at = ?
             WHERE journey_id = ? AND layer = ? AND trigger_id = ?
-              AND payload_hash = ? AND status = 'pending' AND updated_at <= ?`,
+              AND payload_hash = ? AND status = 'pending' AND created_at <= ?`,
         )
         .bind(
           JSON.stringify(input.staleFallback),
@@ -115,7 +116,7 @@ export class D1EncounterReceiptLedger implements EncounterReceiptLedger {
 
       row = await bindKey(
         this.db.prepare(
-          "SELECT payload_hash, status, result_json, updated_at FROM encounter_receipts WHERE journey_id = ? AND layer = ? AND trigger_id = ?",
+          "SELECT payload_hash, status, result_json, created_at, updated_at FROM encounter_receipts WHERE journey_id = ? AND layer = ? AND trigger_id = ?",
         ),
         key,
       ).first<ReceiptRow>();
@@ -126,7 +127,7 @@ export class D1EncounterReceiptLedger implements EncounterReceiptLedger {
 
     return {
       kind: "pending",
-      retryAfterMs: Math.max(250, row.updated_at - input.stalePendingBeforeMs),
+      retryAfterMs: Math.min(750, Math.max(250, row.created_at - input.stalePendingBeforeMs)),
     };
   }
 

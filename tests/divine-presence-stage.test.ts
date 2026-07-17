@@ -27,13 +27,16 @@ function contrastRatio(foreground: string, background: string) {
   return (values[0] + 0.05) / (values[1] + 0.05);
 }
 
-test("Divine Presence shows authored words immediately and never gates continuation", () => {
-  assert.match(source, /const visibleEncounter = encounter \?\?/);
-  assert.match(source, /registry\.fallback\.spokenLine/);
-  assert.match(source, /THE SIGN HAS NOT YET SETTLED/);
+test("Divine Presence shows one oracle only after the encounter reaches a terminal state", () => {
+  assert.match(source, /const terminalEncounter = pending \? null : encounter/);
+  assert.doesNotMatch(source, /registry\.fallback\.spokenLine/);
+  assert.match(source, /THE SIGN GATHERS/);
   assert.match(source, /Authored fallback/);
-  assert.match(source, /<button type="button" onClick=\{onContinue\}>/);
-  assert.match(source, /event\.key !== "Escape"/);
+  assert.match(source, /\{terminalEncounter \? \([\s\S]*<blockquote/);
+  assert.match(source, /\{terminalEncounter \? \([\s\S]*<button type="button" onClick=\{onContinue\}>/);
+  assert.match(source, /!terminalEncounter \|\| event\.key !== "Escape"/);
+  assert.match(styles, /\.divine-oracle-frame \{ min-height:/);
+  assert.match(styles, /\.divine-presence-actions \{[^}]*divine-actions-enter/);
 });
 
 test("Divine Presence is a focused full-page interstitial without unsupported modal semantics", () => {
@@ -41,9 +44,11 @@ test("Divine Presence is a focused full-page interstitial without unsupported mo
   const mainOpening = source.slice(mainStart, source.indexOf(">", mainStart) + 1);
   assert.match(source, /stageRef\.current\?\.focus\(\)/);
   assert.match(source, /<main[\s\S]*aria-labelledby="divine-presence-name"/);
+  assert.match(source, /: "divine-presence-status"/);
+  assert.match(source, /id="divine-presence-status"[\s\S]*role="status"/);
   assert.doesNotMatch(source, /role="dialog"|aria-modal=/);
   assert.doesNotMatch(mainOpening, /aria-busy=/);
-  assert.match(source, /className="divine-provenance" role="status" aria-live="polite" aria-busy=\{pending\}/);
+  assert.match(source, /className="divine-oracle-frame" role="status" aria-live="polite" aria-busy=\{!terminalEncounter\}/);
 });
 
 test("every small Divine label meets WCAG AA contrast", () => {
@@ -73,6 +78,10 @@ test("Divine Presence fetches one async-decoded image only after the stage mount
 });
 
 test("Divine Presence remains complete on mobile and under reduced motion", () => {
+  assert.match(styles, /@media \(min-width: 851px\) and \(max-height: 760px\)[\s\S]*\.divine-copy \{[^}]*overflow-y: auto;/);
+  assert.match(styles, /@media \(min-width: 851px\) and \(max-height: 760px\)[\s\S]*\.divine-portrait \{[^}]*height: 100svh;[^}]*min-height: 100svh;/);
+  assert.match(styles, /@media \(min-width: 851px\) and \(max-height: 760px\)[\s\S]*\.divine-presence-actions \{[^}]*padding-bottom: 24px;/);
+  assert.match(styles, /\.divine-presence-actions button:focus-visible \{[^}]*outline:/);
   assert.match(styles, /grid-template-areas: "portrait" "copy";/);
   assert.match(styles, /\.divine-portrait \{ min-height: 55svh; height: 55svh; \}/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.divine-kicker/);

@@ -23,7 +23,7 @@ import {
 
 export const DIVINE_MODEL = "gpt-5.6-terra";
 export const DIVINE_MAX_BODY_BYTES = 24 * 1024;
-export const DIVINE_MODEL_TIMEOUT_MS = 15_000;
+export const DIVINE_MODEL_TIMEOUT_MS = 8_000;
 
 export interface CleanDivineRequest {
   readonly journeyId: string;
@@ -79,9 +79,6 @@ const SERVER_PROMPTS: Readonly<Record<DivineTriggerId, { persona: string; lore: 
 });
 
 export async function handleDivineRequest(request: Request, dependencies: DivineHandlerDependencies): Promise<Response> {
-  if (isRateLimited(request, "divine")) {
-    return json({ error: "DIVINE_RATE_LIMITED", message: "The gods withdraw for a brief silence." }, 429);
-  }
   const parsedBody = await readJsonWithLimit(request, DIVINE_MAX_BODY_BYTES);
   if (!parsedBody.ok) return json({ error: "DIVINE_INPUT_INVALID", message: `Invalid ${parsedBody.field}.` }, parsedBody.status);
 
@@ -105,7 +102,14 @@ export async function handleDivineRequest(request: Request, dependencies: Divine
       payloadHash,
       authoredFallback: fallback,
       now: dependencies.now,
-      invoke: () => invokeTerra(payload, dependencies),
+      pendingTimeoutMs: dependencies.timeoutMs ?? DIVINE_MODEL_TIMEOUT_MS,
+      invoke: (remainingMs) => {
+        if (isRateLimited(request, "divine")) throw new Error("The divine model rate limit has been reached.");
+        return invokeTerra(payload, {
+          ...dependencies,
+          timeoutMs: Math.max(1, Math.min(remainingMs, dependencies.timeoutMs ?? DIVINE_MODEL_TIMEOUT_MS)),
+        });
+      },
     });
 
     if (execution.kind === "pending") {
@@ -181,11 +185,8 @@ async function invokeTerra(payload: CleanDivineRequest, dependencies: DivineHand
   const allowedMemoryRefs = memory.map((item) => item.ref);
   const prompt = SERVER_PROMPTS[payload.triggerId];
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  let response: Response;
-
-  try {
-    response = await fetchImpl("https://api.openai.com/v1/responses", {
+  const result = await withAbortTimeout((async () => {
+    const response = await fetchImpl("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${dependencies.apiKey}` },
       signal: controller.signal,
@@ -226,17 +227,19 @@ async function invokeTerra(payload: CleanDivineRequest, dependencies: DivineHand
         max_output_tokens: 300,
       }),
     });
-  } finally {
-    clearTimeout(timeout);
-  }
+    const requestId = response.headers.get("x-request-id");
+    if (!response.ok) {
+      dependencies.logger?.error("Terra API failure", { status: response.status, requestId, triggerId: registry.triggerId });
+      throw new Error("Terra request failed.");
+    }
+    return {
+      requestId,
+      body: await response.json() as OpenAIResponseBody,
+    };
+  })(), controller, timeoutMs);
 
-  const requestId = response.headers.get("x-request-id");
-  if (!response.ok) {
-    dependencies.logger?.error("Terra API failure", { status: response.status, requestId, triggerId: registry.triggerId });
-    throw new Error("Terra request failed.");
-  }
-
-  const rawText = outputText(await response.json() as OpenAIResponseBody);
+  const { requestId } = result;
+  const rawText = outputText(result.body);
   if (!rawText) {
     dependencies.logger?.error("Terra returned no structured output", { requestId, triggerId: registry.triggerId });
     throw new Error("Terra returned no output.");
@@ -256,6 +259,25 @@ async function invokeTerra(payload: CleanDivineRequest, dependencies: DivineHand
 
   dependencies.logger?.info("Terra divine presence completed", { requestId, triggerId: registry.triggerId });
   return composeDivineEncounter(payload.triggerId, rawOutput, allowedMemoryRefs);
+}
+
+async function withAbortTimeout<T>(
+  operation: Promise<T>,
+  controller: AbortController,
+  timeoutMs: number,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new DOMException("The Terra request exceeded its authoritative window.", "TimeoutError"));
+    }, Math.max(1, timeoutMs));
+  });
+  try {
+    return await Promise.race([operation, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 function compressedMemory(timeline: readonly TimelineEntry[]) {

@@ -30,39 +30,25 @@ export function DivinePresenceStage({
     : loadedImageSrc === imageSrc
       ? "ready"
       : "loading";
-  const visibleEncounter = encounter ?? {
-    version: 1,
-    layer: "divine",
-    actorId: registry.actorId,
-    triggerId: registry.triggerId,
-    spokenLine: registry.fallback.spokenLine,
-    mark: registry.fallback.mark,
-    memoryRefs: registry.fallback.memoryRefs,
-    presentation: registry.presentation,
-    source: "authored_fallback",
-  } satisfies DivineEncounter;
+  const terminalEncounter = pending ? null : encounter;
 
   useEffect(() => {
     stageRef.current?.focus();
   }, []);
 
-  const sourceState = pending
+  const sourceState = !terminalEncounter
     ? "pending"
-    : visibleEncounter.source === "generated"
+    : terminalEncounter.source === "generated"
       ? "generated"
       : "fallback";
 
-  const status = sourceState === "pending"
-    ? "THE SIGN HAS NOT YET SETTLED"
-    : sourceState === "generated"
+  const status = sourceState === "generated"
       ? "WORDS SHAPED BY GPT-5.6 TERRA"
       : "THE OLDER WORDS REMAIN";
 
-  const disclosure = sourceState === "pending"
-    ? "An authored oracle is present while Terra gathers the sign. It cannot alter your route or choice."
-    : sourceState === "generated"
+  const disclosure = sourceState === "generated"
       ? "AI-generated text by GPT-5.6 Terra. It bears witness; it does not alter the route or outcome."
-      : "Authored fallback. The road and every choice remain yours."
+      : "Authored fallback. The road and every choice remain yours.";
 
   return (
     <main
@@ -71,10 +57,12 @@ export function DivinePresenceStage({
       data-divine-source={sourceState}
       data-divine-trigger={registry.triggerId}
       aria-labelledby="divine-presence-name"
-      aria-describedby="divine-presence-line divine-presence-disclosure"
+      aria-describedby={terminalEncounter
+        ? "divine-presence-line divine-presence-disclosure"
+        : "divine-presence-status"}
       tabIndex={-1}
       onKeyDown={(event) => {
-        if (event.key !== "Escape") return;
+        if (!terminalEncounter || event.key !== "Escape") return;
         event.preventDefault();
         onContinue();
       }}
@@ -105,23 +93,31 @@ export function DivinePresenceStage({
         <p className="divine-kicker">A DIVINE PRESENCE</p>
         <header className="divine-heading">
           <h1 id="divine-presence-name">{registry.displayName}</h1>
-          <p>{visibleEncounter.mark}</p>
+          <p id="divine-presence-status" key={sourceState} role="status" aria-live="polite">
+            {terminalEncounter?.mark || "THE SIGN GATHERS"}
+          </p>
         </header>
 
-        <blockquote id="divine-presence-line" aria-live="polite">
-          {visibleEncounter.spokenLine}
-        </blockquote>
+        <div className="divine-oracle-frame" role="status" aria-live="polite" aria-busy={!terminalEncounter}>
+          {terminalEncounter ? (
+            <>
+              <blockquote id="divine-presence-line">
+                {terminalEncounter.spokenLine}
+              </blockquote>
 
-        <div className="divine-provenance" role="status" aria-live="polite" aria-busy={pending}>
-          <strong>{status}</strong>
-          <p id="divine-presence-disclosure">{disclosure}</p>
-        </div>
+              <div className="divine-provenance">
+                <strong>{status}</strong>
+                <p id="divine-presence-disclosure">{disclosure}</p>
+              </div>
 
-        <div className="divine-presence-actions">
-          <button type="button" onClick={onContinue}>
-            CONTINUE TO THE SHORE
-          </button>
-          <small>THE ROAD REMAINS YOURS</small>
+              <div className="divine-presence-actions">
+                <button type="button" onClick={onContinue}>
+                  CONTINUE TO THE SHORE
+                </button>
+                <small>THE ROAD REMAINS YOURS</small>
+              </div>
+            </>
+          ) : null}
         </div>
       </section>
     </main>

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   DIVINE_MODEL,
+  DIVINE_MODEL_TIMEOUT_MS,
   cleanDivineRequest,
   handleDivineRequest,
 } from "../lib/server/divine-handler.ts";
@@ -59,6 +60,7 @@ function terraResponse(output: unknown, requestId = "req_server_only") {
 const quietLogger = { info() {}, error() {} };
 
 test("a canonical request uses fixed Terra, store false, and strict server-owned schema", async () => {
+  assert.equal(DIVINE_MODEL_TIMEOUT_MS, 8_000);
   const ledger = new TestLedger();
   const captured: { body?: Record<string, unknown> } = {};
   const response = await handleDivineRequest(request(bodyAt("cyclops_departure", 4)), {
@@ -191,6 +193,23 @@ test("a Terra timeout or invalid schema also settles authored fallback", async (
   assert.equal((await timedOut.json()).source, "authored_fallback");
   assert.equal(timedOutLedger.settled?.status, "authored_fallback");
 
+  const stalledBodyLedger = new TestLedger();
+  const stalledBody = await handleDivineRequest(request(bodyAt("cyclops_departure", 4)), {
+    ledger: stalledBodyLedger,
+    apiKey: "test-key",
+    timeoutMs: 1,
+    logger: quietLogger,
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "x-request-id": "req_body_stall" }),
+      json: async () => new Promise<never>(() => {}),
+    }) as unknown as Response,
+  });
+  assert.equal(stalledBody.status, 200);
+  assert.equal((await stalledBody.json()).source, "authored_fallback");
+  assert.equal(stalledBodyLedger.settled?.status, "authored_fallback");
+
   const invalidLedger = new TestLedger();
   const invalid = await handleDivineRequest(request(bodyAt("cyclops_departure", 4)), {
     ledger: invalidLedger,
@@ -252,22 +271,63 @@ test("pending receipts return 202 and payload hash conflicts return 409", async 
   assert.equal(conflict.status, 409);
 });
 
-test("Divine requests use a best-effort rate-limit namespace independent from Homer and audio", async () => {
+test("receipt polling does not consume the paid Divine model rate limit", async () => {
   resetRateLimitForTests();
   const ip = "203.0.113.99";
+  const pendingLedger = new TestLedger();
+  pendingLedger.reservation = { kind: "pending", retryAfterMs: 750 };
+  for (let index = 0; index < 35; index += 1) {
+    const pending = await handleDivineRequest(request(bodyAt("cyclops_departure", 4), ip), {
+      ledger: pendingLedger,
+      apiKey: "test-key",
+      logger: quietLogger,
+    });
+    assert.equal(pending.status, 202);
+  }
+
+  let modelCalls = 0;
+  const winner = await handleDivineRequest(request(bodyAt("cyclops_departure", 4), ip), {
+    ledger: new TestLedger(),
+    apiKey: "test-key",
+    logger: quietLogger,
+    fetchImpl: async () => {
+      modelCalls += 1;
+      return terraResponse({
+        spokenLine: "The sea heard the name you carried from the cave.",
+        mark: "THE SEA KNOWS YOUR NAME",
+        memoryRefs: ["cyclops.answer"],
+      });
+    },
+  });
+  assert.equal(winner.status, 200);
+  assert.equal((await winner.json()).source, "generated");
+  assert.equal(modelCalls, 1);
+});
+
+test("a rate-limited reservation winner settles authored fallback without touching Homer or audio", async () => {
+  resetRateLimitForTests();
+  const ip = "203.0.113.100";
   const seed = request({}, ip);
   const now = Date.now();
   for (let index = 0; index < 30; index += 1) assert.equal(isRateLimited(seed, "divine", now), false);
   assert.equal(isRateLimited(seed, "homer", now), false);
   assert.equal(isRateLimited(seed, "audio", now), false);
 
+  const ledger = new TestLedger();
+  let modelCalls = 0;
   const response = await handleDivineRequest(request(bodyAt("cyclops_departure", 4), ip), {
-    ledger: new TestLedger(),
+    ledger,
     apiKey: "test-key",
     logger: quietLogger,
+    fetchImpl: async () => {
+      modelCalls += 1;
+      throw new Error("rate-limited winner must not call Terra");
+    },
   });
-  assert.equal(response.status, 429);
-  assert.equal((await response.json()).error, "DIVINE_RATE_LIMITED");
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).source, "authored_fallback");
+  assert.equal(modelCalls, 0);
+  assert.equal(ledger.settled?.status, "authored_fallback");
 });
 
 function atIsland(index: number): JourneyMemory {

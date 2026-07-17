@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  ENCOUNTER_PENDING_TIMEOUT_MS,
   EncounterReceiptHashConflictError,
   executeEncounterAtMostOnce,
   type EncounterReceiptKey,
@@ -11,6 +12,7 @@ import {
 } from "../lib/server/encounters/receipt-ledger.ts";
 import {
   cleanupExpiredEncounterReceipts,
+  D1EncounterReceiptLedger,
   type EncounterD1Database,
 } from "../lib/server/encounters/d1-receipt-ledger.ts";
 
@@ -18,6 +20,7 @@ interface StoredReceipt {
   payloadHash: string;
   status: "pending" | "ready" | "authored_fallback";
   value?: unknown;
+  createdAt: number;
   updatedAt: number;
   expiresAt: number;
 }
@@ -40,6 +43,7 @@ class MemoryReceiptLedger implements EncounterReceiptLedger {
       this.receipts.set(key, {
         payloadHash: input.payloadHash,
         status: "pending",
+        createdAt: input.nowMs,
         updatedAt: input.nowMs,
         expiresAt: input.expiresAtMs,
       });
@@ -49,13 +53,13 @@ class MemoryReceiptLedger implements EncounterReceiptLedger {
     if (receipt.status !== "pending") {
       return { kind: "terminal", status: receipt.status, value: receipt.value as T };
     }
-    if (receipt.updatedAt <= input.stalePendingBeforeMs) {
+    if (receipt.createdAt <= input.stalePendingBeforeMs) {
       receipt.status = "authored_fallback";
       receipt.value = input.staleFallback;
       receipt.updatedAt = input.nowMs;
       return { kind: "terminal", status: "authored_fallback", value: input.staleFallback };
     }
-    return { kind: "pending", retryAfterMs: receipt.updatedAt - input.stalePendingBeforeMs };
+    return { kind: "pending", retryAfterMs: receipt.createdAt - input.stalePendingBeforeMs };
   }
 
   async settle<T>(input: SettleReceiptInput<T>): Promise<boolean> {
@@ -76,6 +80,7 @@ const key: EncounterReceiptKey = {
 const fallback = { spokenLine: "The sea keeps its authored warning." };
 
 test("twenty concurrent requests permit exactly one paid invocation", async () => {
+  assert.equal(ENCOUNTER_PENDING_TIMEOUT_MS, 8_000);
   const ledger = new MemoryReceiptLedger();
   let invocations = 0;
   const execute = () => executeEncounterAtMostOnce({
@@ -203,6 +208,200 @@ test("an expired pending receipt becomes terminal fallback and is never regenera
   release();
   assert.deepEqual(await first, { kind: "ready", source: "authored_fallback", value: fallback, cached: true });
   assert.equal(invocations, 1);
+});
+
+test("a model result at the authoritative deadline settles fallback and cannot arrive late", async () => {
+  const ledger = new MemoryReceiptLedger();
+  let current = 50_000;
+  let invocations = 0;
+  const result = await executeEncounterAtMostOnce({
+    ledger,
+    key,
+    payloadHash: "hash-a",
+    authoredFallback: fallback,
+    pendingTimeoutMs: 1_000,
+    now: () => current,
+    invoke: async () => {
+      invocations += 1;
+      current = 51_000;
+      return { spokenLine: "Arrived at the deadline." };
+    },
+  });
+
+  assert.deepEqual(result, { kind: "ready", source: "authored_fallback", value: fallback, cached: false });
+  const cached = await executeEncounterAtMostOnce({
+    ledger,
+    key,
+    payloadHash: "hash-a",
+    authoredFallback: fallback,
+    pendingTimeoutMs: 1_000,
+    now: () => current,
+    invoke: async () => { invocations += 1; return { spokenLine: "Must not run." }; },
+  });
+  assert.deepEqual(cached, { kind: "ready", source: "authored_fallback", value: fallback, cached: true });
+  assert.equal(invocations, 1);
+});
+
+test("a model result before the authoritative deadline settles generated", async () => {
+  const ledger = new MemoryReceiptLedger();
+  let current = 60_000;
+  const generated = { spokenLine: "Arrived before the deadline." };
+  const result = await executeEncounterAtMostOnce({
+    ledger,
+    key,
+    payloadHash: "hash-a",
+    authoredFallback: fallback,
+    pendingTimeoutMs: 1_000,
+    now: () => current,
+    invoke: async () => {
+      current = 60_999;
+      return generated;
+    },
+  });
+  assert.deepEqual(result, { kind: "ready", source: "generated", value: generated, cached: false });
+});
+
+test("a reservation that consumes the authority window settles fallback without invoking", async () => {
+  let current = 70_000;
+  let invocations = 0;
+  const slowLedger: EncounterReceiptLedger = {
+    async reserve() {
+      current += 1_001;
+      return { kind: "winner" };
+    },
+    async settle() { return true; },
+  };
+  const result = await executeEncounterAtMostOnce({
+    ledger: slowLedger,
+    key,
+    payloadHash: "hash-a",
+    authoredFallback: fallback,
+    pendingTimeoutMs: 1_000,
+    now: () => current,
+    invoke: async () => { invocations += 1; return { spokenLine: "Must not run." }; },
+  });
+  assert.deepEqual(result, { kind: "ready", source: "authored_fallback", value: fallback, cached: false });
+  assert.equal(invocations, 0);
+});
+
+test("a slow reservation passes only the remaining authority budget to the model", async () => {
+  let current = 80_000;
+  let receivedBudget = 0;
+  const delayedLedger: EncounterReceiptLedger = {
+    async reserve() {
+      current += 400;
+      return { kind: "winner" };
+    },
+    async settle() { return true; },
+  };
+  const generated = { spokenLine: "Arrived inside the remaining window." };
+  const result = await executeEncounterAtMostOnce({
+    ledger: delayedLedger,
+    key,
+    payloadHash: "hash-a",
+    authoredFallback: fallback,
+    pendingTimeoutMs: 1_000,
+    now: () => current,
+    invoke: async (remainingMs) => {
+      receivedBudget = remainingMs;
+      current = 80_999;
+      return generated;
+    },
+  });
+  assert.equal(receivedBudget, 600);
+  assert.deepEqual(result, { kind: "ready", source: "generated", value: generated, cached: false });
+});
+
+test("D1 stale recovery is anchored to created_at rather than a refreshed updated_at", async () => {
+  const queries: string[] = [];
+  const boundValues: unknown[][] = [];
+  const db: EncounterD1Database = {
+    prepare(query) {
+      queries.push(query);
+      const values: unknown[] = [];
+      boundValues.push(values);
+      return {
+        bind(...items) { values.push(...items); return this; },
+        async run() {
+          if (/INSERT OR IGNORE/.test(query)) return { meta: { changes: 0 } };
+          if (/status = 'authored_fallback'/.test(query)) return { meta: { changes: 1 } };
+          return { meta: { changes: 0 } };
+        },
+        async first<T>() {
+          return {
+            payload_hash: "hash-a",
+            status: "pending",
+            result_json: null,
+            created_at: 1_000,
+            updated_at: 99_000,
+          } as T;
+        },
+      };
+    },
+  };
+  const ledger = new D1EncounterReceiptLedger(db);
+  const reservation = await ledger.reserve({
+    key,
+    payloadHash: "hash-a",
+    nowMs: 9_001,
+    expiresAtMs: 100_000,
+    stalePendingBeforeMs: 1_001,
+    staleFallback: fallback,
+  });
+  assert.deepEqual(reservation, { kind: "terminal", status: "authored_fallback", value: fallback });
+  const staleUpdateIndex = queries.findIndex((query) => /status = 'authored_fallback'/.test(query));
+  assert.ok(staleUpdateIndex >= 0);
+  assert.match(queries[staleUpdateIndex], /payload_hash = \?/);
+  assert.match(queries[staleUpdateIndex], /status = 'pending'/);
+  assert.match(queries[staleUpdateIndex], /created_at <= \?/);
+  assert.doesNotMatch(queries[staleUpdateIndex], /updated_at <= \?/);
+  assert.equal(boundValues[staleUpdateIndex].at(-1), 1_001);
+});
+
+test("a D1 stale-recovery loser rereads and returns the winning terminal oracle", async () => {
+  const generated = { spokenLine: "The stored oracle wins the recovery race." };
+  let selects = 0;
+  const db: EncounterD1Database = {
+    prepare(query) {
+      return {
+        bind() { return this; },
+        async run() {
+          if (/INSERT OR IGNORE/.test(query)) return { meta: { changes: 0 } };
+          if (/status = 'authored_fallback'/.test(query)) return { meta: { changes: 0 } };
+          return { meta: { changes: 0 } };
+        },
+        async first<T>() {
+          selects += 1;
+          return (selects === 1
+            ? {
+                payload_hash: "hash-a",
+                status: "pending",
+                result_json: null,
+                created_at: 1_000,
+                updated_at: 99_000,
+              }
+            : {
+                payload_hash: "hash-a",
+                status: "ready",
+                result_json: JSON.stringify(generated),
+                created_at: 1_000,
+                updated_at: 9_001,
+              }) as T;
+        },
+      };
+    },
+  };
+  const ledger = new D1EncounterReceiptLedger(db);
+  const reservation = await ledger.reserve({
+    key,
+    payloadHash: "hash-a",
+    nowMs: 9_001,
+    expiresAtMs: 100_000,
+    stalePendingBeforeMs: 1_001,
+    staleFallback: fallback,
+  });
+  assert.deepEqual(reservation, { kind: "terminal", status: "ready", value: generated });
+  assert.equal(selects, 2);
 });
 
 test("a missing or failed D1 ledger returns authored fallback without model use", async () => {

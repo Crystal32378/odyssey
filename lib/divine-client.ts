@@ -7,8 +7,12 @@ import {
 } from "./divine.ts";
 import { ISLANDS, type TimelineEntry } from "./journey.ts";
 
-export const DIVINE_REQUEST_TIMEOUT_MS = 18_000;
-export const DIVINE_MAX_RETRY_AFTER_MS = 3_000;
+export const DIVINE_PRESENTATION_TIMEOUT_MS = 10_000;
+export const DIVINE_ATTEMPT_TIMEOUT_MS = 7_000;
+export const DIVINE_MIN_PENDING_MS = 700;
+export const DIVINE_DEFAULT_RETRY_AFTER_MS = 1_000;
+export const DIVINE_MIN_RETRY_AFTER_MS = 250;
+export const DIVINE_MAX_RETRY_AFTER_MS = 1_000;
 
 export interface DivineRequestContext {
   readonly homeGoal: string;
@@ -24,10 +28,18 @@ export interface DivineRequestPayload {
 
 type DivineFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
+interface DivineHttpResult {
+  readonly status: number;
+  readonly body: unknown;
+  readonly retryAfter: string | null;
+}
+
 interface RequestDivineOptions {
   readonly fetcher?: DivineFetch;
   readonly sleep?: (milliseconds: number) => Promise<void>;
+  readonly now?: () => number;
   readonly timeoutMs?: number;
+  readonly minimumPendingMs?: number;
 }
 
 export async function requestDivineEncounter(
@@ -37,19 +49,48 @@ export async function requestDivineEncounter(
   const fallback = authoredDivineFallback(payload.triggerId);
   const fetcher = options.fetcher || globalThis.fetch;
   const sleep = options.sleep || ((milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds)));
-  const timeoutMs = options.timeoutMs ?? DIVINE_REQUEST_TIMEOUT_MS;
+  const now = options.now || Date.now;
+  const timeoutMs = Math.max(1, options.timeoutMs ?? DIVINE_PRESENTATION_TIMEOUT_MS);
+  const startedAtMs = now();
+  const deadlineAtMs = startedAtMs + timeoutMs;
+  const minimumVisibleAtMs = Math.min(
+    deadlineAtMs,
+    startedAtMs + Math.max(0, options.minimumPendingMs ?? DIVINE_MIN_PENDING_MS),
+  );
 
-  try {
-    const first = await postDivine(payload, fetcher, timeoutMs);
-    if (first.status !== 202) return await encounterFromResponse(first, payload) || fallback;
+  while (now() < deadlineAtMs) {
+    const remainingBeforeRequestMs = deadlineAtMs - now();
+    if (remainingBeforeRequestMs <= 0) break;
+    let response: DivineHttpResult | null = null;
+    try {
+      response = await postDivine(
+        payload,
+        fetcher,
+        Math.max(1, Math.min(DIVINE_ATTEMPT_TIMEOUT_MS, remainingBeforeRequestMs)),
+      );
+    } catch {
+      // Transient transport failures remain pending within the same presentation deadline.
+    }
+    if (now() >= deadlineAtMs) break;
 
-    const retryAfterMs = boundedRetryAfter(first);
-    if (retryAfterMs > 0) await sleep(retryAfterMs);
-    const retry = await postDivine(payload, fetcher, timeoutMs);
-    return await encounterFromResponse(retry, payload) || fallback;
-  } catch {
-    return fallback;
+    if (response?.status === 200) {
+      const encounter = encounterFromResponse(response.body, payload);
+      if (encounter) {
+        await waitUntil(minimumVisibleAtMs, now, sleep);
+        return encounter;
+      }
+    }
+
+    const remainingAfterRequestMs = deadlineAtMs - now();
+    if (remainingAfterRequestMs <= 0) break;
+    const retryAfterMs = response?.status === 202
+      ? boundedRetryAfter(response)
+      : DIVINE_DEFAULT_RETRY_AFTER_MS;
+    await sleep(Math.min(retryAfterMs, remainingAfterRequestMs));
   }
+
+  await waitUntil(minimumVisibleAtMs, now, sleep);
+  return fallback;
 }
 
 export function authoredDivineFallback(triggerId: DivineTriggerId): DivineEncounter {
@@ -102,11 +143,14 @@ export function validateDivineEncounterResponse(
   return output ? composeDivineEncounter(triggerId, output, allowedMemoryRefs) : null;
 }
 
-async function postDivine(payload: DivineRequestPayload, fetcher: DivineFetch, timeoutMs: number) {
+async function postDivine(
+  payload: DivineRequestPayload,
+  fetcher: DivineFetch,
+  timeoutMs: number,
+): Promise<DivineHttpResult> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), Math.max(1, timeoutMs));
-  try {
-    return await fetcher("/api/divine", {
+  return withAbortTimeout((async () => {
+    const response = await fetcher("/api/divine", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -116,28 +160,69 @@ async function postDivine(payload: DivineRequestPayload, fetcher: DivineFetch, t
       }),
       signal: controller.signal,
     });
-  } finally {
-    clearTimeout(timer);
-  }
+    let body: unknown = null;
+    if (response.status === 200 || response.status === 202) {
+      try { body = await response.json(); } catch { /* A malformed body remains retriable until the shared deadline. */ }
+    }
+    return {
+      status: response.status,
+      body,
+      retryAfter: response.headers.get("Retry-After"),
+    };
+  })(), controller, timeoutMs);
 }
 
-async function encounterFromResponse(response: Response, payload: DivineRequestPayload) {
-  if (response.status !== 200) return null;
-  let raw: unknown;
-  try {
-    raw = await response.json();
-  } catch {
-    return null;
-  }
+function encounterFromResponse(raw: unknown, payload: DivineRequestPayload) {
   return validateDivineEncounterResponse(raw, payload.triggerId, payload.context);
 }
 
-function boundedRetryAfter(response: Response) {
-  const retryAfter = response.headers.get("Retry-After");
-  if (!retryAfter) return 0;
-  const seconds = Number(retryAfter);
-  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
-  return Math.min(Math.ceil(seconds * 1_000), DIVINE_MAX_RETRY_AFTER_MS);
+function boundedRetryAfter(response: DivineHttpResult) {
+  let responseMilliseconds: number | null = null;
+  if (
+    isRecord(response.body)
+    && response.body.status === "pending"
+    && typeof response.body.retryAfterMs === "number"
+    && Number.isFinite(response.body.retryAfterMs)
+    && response.body.retryAfterMs > 0
+  ) {
+    responseMilliseconds = response.body.retryAfterMs;
+  }
+
+  const seconds = Number(response.retryAfter);
+  const headerMilliseconds = Number.isFinite(seconds) && seconds > 0 ? seconds * 1_000 : null;
+  const requested = responseMilliseconds ?? headerMilliseconds ?? DIVINE_DEFAULT_RETRY_AFTER_MS;
+  return Math.min(
+    DIVINE_MAX_RETRY_AFTER_MS,
+    Math.max(DIVINE_MIN_RETRY_AFTER_MS, Math.ceil(requested)),
+  );
+}
+
+async function withAbortTimeout<T>(
+  operation: Promise<T>,
+  controller: AbortController,
+  timeoutMs: number,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new DOMException("The divine request exceeded its presentation budget.", "TimeoutError"));
+    }, Math.max(1, timeoutMs));
+  });
+  try {
+    return await Promise.race([operation, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+async function waitUntil(
+  targetMs: number,
+  now: () => number,
+  sleep: (milliseconds: number) => Promise<void>,
+) {
+  const remainingMs = targetMs - now();
+  if (remainingMs > 0) await sleep(remainingMs);
 }
 
 function memoryRefsForContext(context: DivineRequestContext) {

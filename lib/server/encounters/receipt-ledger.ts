@@ -1,5 +1,5 @@
 export const ENCOUNTER_RECEIPT_TTL_MS = 24 * 60 * 60 * 1_000;
-export const ENCOUNTER_PENDING_TIMEOUT_MS = 45_000;
+export const ENCOUNTER_PENDING_TIMEOUT_MS = 8_000;
 
 export type EncounterLayer = "divine" | "luna";
 export type EncounterReceiptStatus = "pending" | "ready" | "authored_fallback";
@@ -61,7 +61,7 @@ interface ExecuteEncounterInput<T> {
   key: EncounterReceiptKey;
   payloadHash: string;
   authoredFallback: T;
-  invoke: () => Promise<T>;
+  invoke: (remainingMs: number) => Promise<T>;
   now?: () => number;
   receiptTtlMs?: number;
   pendingTimeoutMs?: number;
@@ -84,6 +84,7 @@ export async function executeEncounterAtMostOnce<T>({
   if (!ledger) return fallbackExecution(authoredFallback);
 
   const reservedAt = now();
+  const deadlineAt = reservedAt + pendingTimeoutMs;
   let reservation: ReceiptReservation<T>;
 
   try {
@@ -109,9 +110,26 @@ export async function executeEncounterAtMostOnce<T>({
       : fallbackExecution(reservation.value, true);
   }
 
+  const invocationStartedAt = now();
+  const remainingMs = deadlineAt - invocationStartedAt;
+  if (remainingMs <= 0) {
+    try {
+      await ledger.settle({
+        key,
+        payloadHash,
+        status: "authored_fallback",
+        value: authoredFallback,
+        nowMs: invocationStartedAt,
+      });
+    } catch {
+      // The local authored fallback still keeps the journey operable.
+    }
+    return fallbackExecution(authoredFallback);
+  }
+
   let generated: T;
   try {
-    generated = await invoke();
+    generated = await invoke(remainingMs);
   } catch {
     try {
       await ledger.settle({
@@ -127,13 +145,29 @@ export async function executeEncounterAtMostOnce<T>({
     return fallbackExecution(authoredFallback);
   }
 
+  const completedAt = now();
+  if (completedAt >= deadlineAt) {
+    try {
+      await ledger.settle({
+        key,
+        payloadHash,
+        status: "authored_fallback",
+        value: authoredFallback,
+        nowMs: completedAt,
+      });
+    } catch {
+      // The local authored fallback still keeps the journey operable.
+    }
+    return fallbackExecution(authoredFallback);
+  }
+
   try {
     const settled = await ledger.settle({
       key,
       payloadHash,
       status: "ready",
       value: generated,
-      nowMs: now(),
+      nowMs: completedAt,
     });
     if (!settled) return fallbackExecution(authoredFallback, true);
   } catch {
