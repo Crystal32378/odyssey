@@ -128,6 +128,7 @@ Add one row for every meaningful competition-period change.
 | 2026-07-16 | Gate 4: D1-backed Terra Divine Presence Layer | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `a967a38` through `b4fac14` | Principal implementation thread | 77 tests, lint, build, D1 concurrency, six-trigger route, public browser QA | Version `045777b3-ba8c-4ca6-9f14-5b0b23e1e53a`; tag `gate4-divine-b4fac14`; reading-pace HOLD superseded by accepted Gate 4.1 |
 | 2026-07-17 | Gate 4.1: terminal-only Divine oracle reveal | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `0c84789` | Principal implementation thread `019f5fbf-c01b-7211-8d17-c7556d6f0d6f` | 90 tests, lint, build, receipt-deadline and late-result tests, short-desktop/mobile runtime QA | Version `3be77b47-9bda-4eae-b946-c0eec9c85eb3`; tag `gate4-1-0c84789`; Crystal reading-pace acceptance PASS |
 | 2026-07-17 | Gate 5A: authored Penelope Recognition Ritual | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `ae0aa9e`, `9141d3d` | Isolated Codex CLI implementation office | 94 tests, lint, build, Ithaca/Calypso, ordering, image-failure, desktop/mobile/reduced-motion runtime QA | Version `955cdb06-217f-408f-b29d-999e5e734e61`; tag `gate5a-penelope-9141d3d`; Crystal Acceptance pending |
+| 2026-07-18 | Gate 5A visual refinement: full-bleed frameless Penelope | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `fab78ad` | Isolated Codex CLI implementation office | 94 tests, lint, build, local/public full-bleed, fallback, desktop/mobile/reduced-motion QA | Version `8f36be04-4f4b-43d5-a8a9-c9e23fce3dc4`; tag `gate5a-frameless-fab78ad`; Crystal Acceptance pending |
 
 ## 6. Codex evidence
 
@@ -209,11 +210,11 @@ Every claim must be supported by code and a testable product path.
 
 ## 9. Gate 5A Penelope Recognition verification
 
-**Deployed branch head:** `9141d3d`
+**Deployed branch head:** `fab78ad`
 
-**Public Preview Version:** `955cdb06-217f-408f-b29d-999e5e734e61`
+**Public Preview Version:** `8f36be04-4f4b-43d5-a8a9-c9e23fce3dc4`
 
-**Git tag:** `gate5a-penelope-9141d3d`
+**Git tag:** `gate5a-frameless-fab78ad`
 
 - Penelope appears automatically only after the completed Ithaca Journey Card and before Restart. She never appears on the Calypso ending.
 - The ritual uses Crystal's approved canonical mark and text. It is authored, silent, stable from first render, and has no Luna request, receipt, or AI-generated provenance label.
@@ -221,6 +222,7 @@ Every claim must be supported by code and a testable product path.
 - Image failure removes only the portrait. The canonical text and enabled Restart path remain complete.
 - Four Gate 5A regression tests bring the full suite to 94 passing tests. Lint completed with no errors and the production build passed.
 - Local and public Chrome runtime checks covered `1366 x 768` desktop, `390 x 844` mobile, reduced motion, Ithaca ordering, Calypso exclusion, blocked-image fallback, no horizontal overflow, and zero console errors.
+- The isolated `fab78ad` visual refinement removes the outer frame and card treatment, expands the image to a full-bleed ritual environment, and makes Restart visually secondary without changing DOM order, copy, semantics, state, or behavior.
 - `lib/journey.ts`, `lib/voyage.ts`, Journey Memory, Homer, Divine Presence, all Engine outcomes, Luna server work, voice, and soundscape were not changed.
 - Gate 5A is deployed only to the Preview Worker and remains pending Crystal visual and narrative acceptance. Draft PR #12 remains unmerged.
 
