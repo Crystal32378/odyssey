@@ -9,6 +9,7 @@ test("model preflight key contains the complete requested model set", () => {
     LUNA_MODEL: "gpt-5.6-luna",
     HOMER_MODEL_FALLBACK: "gpt-5.5",
   }), ["gpt-5.5", "gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"]);
+  assert.deepEqual(requiredModelSet({}), ["gpt-5.5", "gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"]);
 });
 
 test("a same-day cache cannot hide a newly requested model", () => {

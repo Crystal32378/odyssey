@@ -58,7 +58,7 @@ export function requiredModelSet(environment = process.env) {
   return [...new Set([
     environment.HOMER_MODEL || "gpt-5.6-sol",
     environment.DIVINE_MODEL || "gpt-5.6-terra",
-    environment.LUNA_MODEL,
+    environment.LUNA_MODEL || "gpt-5.6-luna",
     environment.HOMER_MODEL_CANDIDATE,
     environment.HOMER_MODEL_FALLBACK || "gpt-5.5",
   ].filter(Boolean))].sort();
