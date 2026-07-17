@@ -30,6 +30,7 @@ Framework starter SVGs are not claimed as original Odyssey artwork and retain th
 | Journey Card crest | `/public/assets/journey-card-crest.webp` | Crystal Chang direction; GPT-5.6 Sol with Image 2 | Background removal, alpha repair, WebP conversion, and validation | Crystal Chang; all rights reserved |
 | Homer medallion | `/public/assets/homer-medallion.webp` | Crystal Chang direction; GPT-5.6 Sol with Image 2 | Background removal, alpha repair, WebP conversion, and validation | Crystal Chang; all rights reserved |
 | Six Divine Presence portraits | `/public/divine/v1/*.webp` | Crystal Chang direction; GPT-5.6 Sol with Image 2; source PNGs `Zeus.png`, `Poseidon.png`, `Athena.png`, `Hermes.png`, `Helios.png`, and `Ino.png` remain outside the repository | Versioned WebP optimization, mapping, and delivery validation | Crystal Chang; all rights reserved |
+| Penelope Recognition portrait | `/public/characters/v1/penelope.webp` | Crystal Chang supplied and approved source PNG `Penelope.png`; generated in Crystal's 2026-07-16 ChatGPT session against the approved Odyssey visual canon; original remains outside the repository | Versioned WebP optimization and delivery validation | Crystal Chang; all rights reserved |
 | Starter SVGs | `/public/favicon.svg`, `/public/file.svg`, `/public/globe.svg`, `/public/window.svg` | Project starter scaffold | None claimed as Odyssey creative work | Applicable upstream terms |
 
 ## Visual systems
@@ -77,6 +78,14 @@ The supplied PNGs contained a baked checkerboard and no alpha channel. Non-destr
 | Homer medallion | `/assets/homer-medallion.webp` | Production-ready and used as the restrained Homer audio marker. |
 
 Original source files remain untouched outside the repository.
+
+## Penelope Recognition derivative
+
+The Gate 5A Penelope source was supplied and approved by Crystal Chang. It contains no external third-party asset. The original `1672 x 941` PNG remains outside the repository with SHA-256 `538214dbd2d169db44b47fda61f455355fdfb7206bea6d83f95ab7b9bfd4e2e1`.
+
+| Character | App path | Dimensions | Bytes | SHA-256 |
+|---|---|---:|---:|---|
+| Penelope | `/characters/v1/penelope.webp` | `1440 x 810` | 56,142 | `508423e62dc72d27ef1269aad79c5f3a461e63f8cd30c074ad5173b4e1a8638c` |
 
 ## Divine Presence derivatives
 
