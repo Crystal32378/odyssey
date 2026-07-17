@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { DivinePresenceStage } from "./divine-presence-stage";
+import { PenelopeRecognition } from "./penelope-recognition";
 import { requestDivineEncounter } from "../lib/divine-client";
 import { getDivineTriggerForResolvedDeparture, type DivineTriggerId } from "../lib/divine";
 import {
@@ -347,6 +348,7 @@ function Ending({ memory, scene, summary, card, phase, stage, generate, reset, e
     {summary && <section className="journey-summary"><p className="card-label">JOURNEY SUMMARY</p><p>{summary.summary}</p></section>}
     {summary && generating && stage === "sealing" && <JourneyCardForming/>}
     {card && <JourneyCardResult card={card} shoreCount={memory.timeline.length}/>}
+    {!calypso && card && <PenelopeRecognition/>}
     <p className="timeline-note">{memory.timeline.length} shores recorded · The Journey Memory is intact.</p>
     <button className="restart" onClick={reset} disabled={generating}>BEGIN ANOTHER ODYSSEY</button>
   </main>;
