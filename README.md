@@ -6,6 +6,20 @@ Odyssey is an AI-native interactive journey inspired by Homer’s *Odyssey*. Eve
 
 GPT is not the hero. **GPT is Homer. The player is the hero.**
 
+## The problem
+
+Classical literature too often appears only in university classrooms: read once, analyzed for an assignment, and then left behind. Yet works such as *The Odyssey* contain enduring questions about home, temptation, loyalty, grief, identity, endurance, and return—questions that can reveal different meanings at different stages of life.
+
+The barrier is not only access. The names, places, and episodes are difficult to remember, and most readers do not have a simple way to return to the text, reconnect its fragments, and reflect on what they mean now.
+
+## The response
+
+Odyssey condenses the essential arc of the epic into a simple, replayable fourteen-station journey. Its visual interface helps players remember key characters, places, and dilemmas, while their own choices make each return a new act of interpretation.
+
+AI does not replace the classic, summarize it into trivia, or tell the player what to believe. It helps the text meet the traveler where they are.
+
+> **Odyssey does not turn a classic into trivia. It makes the classic returnable.**
+
 ## Product idea
 
 - The map is the interface, not an illustration.
