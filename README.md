@@ -179,6 +179,7 @@ Codex is used as the principal implementation, testing, and deployment environme
 - implemented and tested the landing-page cover correction and the local-memory Ending Ritual
 - added bounded ending timeouts and a Summary-preserving Card-only retry path
 - built the D1-backed, at-most-once Divine Presence receipt flow, server-owned Terra registry, six canonical triggers, authored fallbacks, and marble encounter stage
+- separated Divine waiting, generated, and authored-fallback states so one encounter can reveal only one stable oracle
 - ran independent canonical-route, client-wiring, accessibility, asset, and D1 concurrency audits before deployment
 - run automated tests, lint, production builds, Cloudflare Preview deployments, and desktop/mobile runtime verification
 
@@ -208,7 +209,7 @@ The foundation available at that moment included:
 
 **Boundary maintenance:** PR #8 was merged at `6f74f9fde53ba53e2483f2168fcd75751a380b7e`, fourteen minutes after the submission period began. It adds transient island-image retry and recovery behavior. It may be cited as Build Week Preview reliability evidence, but not as evidence that Odyssey was meaningfully extended.
 
-**Current Build Week checkpoint:** Draft PR #12 records the explicit `gpt-5.6-sol` Homer integration, complete island-art mapping, Ending Ritual, accepted Gate 3.2 voyage/arrival presentation, and Gate 4 Divine Presence Layer through `b4fac14`. Gate 4 passed 77 automated tests, lint, production build, remote D1 concurrency verification, six generated Terra triggers on the full Ithaca route, and public desktop/mobile runtime review. Divine audio remains intentionally deferred; Crystal's final Gate 4 visual and route acceptance is pending. These remain branch-and-Preview claims until the PR is approved and merged.
+**Current Build Week checkpoint:** Draft PR #12 records the explicit `gpt-5.6-sol` Homer integration, complete island-art mapping, Ending Ritual, accepted Gate 3.2 voyage/arrival presentation, and the Gate 4 Divine Presence Layer. Gate 4.1 at `0c84789` makes the Divine waiting state neutral, reveals exactly one generated oracle or authored fallback, and withholds continuation until that terminal result is stable. The checkpoint passed 90 automated tests, lint with no errors, production build, local desktop/mobile runtime review, and a generated public Terra request in 4.49 seconds. Public Preview Version `3be77b47-9bda-4eae-b946-c0eec9c85eb3` is tagged `gate4-1-0c84789`; Crystal's Gate 4.1 reading-pace acceptance remains pending. Luna and Divine audio remain intentionally deferred. These remain branch-and-Preview claims until the PR is approved and merged.
 
 ## Security
 

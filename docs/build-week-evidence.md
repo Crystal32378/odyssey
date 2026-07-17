@@ -126,6 +126,7 @@ Add one row for every meaningful competition-period change.
 | 2026-07-14 | Gate 2: explicit Sol model, complete island art, cover correction, and Ending Ritual | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `5ef1975` through `7d62b51` | Principal implementation thread | 20 tests, lint, production build | Public Preview Gate 2; evidence in PR #12 |
 | 2026-07-15 | Gate 3.2: compositor voyage camera and six-beat arrival ritual | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `8d63e4f`, `e92e321` | Principal implementation thread | 34 tests; Firefox, Chrome, Safari, mobile, reduced motion, recovery, fourteen shores | Version `690f7ed3-8c9f-460f-a883-58af7fce2d99`; Crystal PASS |
 | 2026-07-16 | Gate 4: D1-backed Terra Divine Presence Layer | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `a967a38` through `b4fac14` | Principal implementation thread | 77 tests, lint, build, D1 concurrency, six-trigger route, public browser QA | Version `045777b3-ba8c-4ca6-9f14-5b0b23e1e53a`; tag `gate4-divine-b4fac14`; Crystal acceptance pending |
+| 2026-07-17 | Gate 4.1: terminal-only Divine oracle reveal | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `0c84789` | Principal implementation thread | 90 tests, lint, build, receipt-deadline and late-result tests, short-desktop/mobile runtime QA | Version `3be77b47-9bda-4eae-b946-c0eec9c85eb3`; tag `gate4-1-0c84789`; Crystal reading-pace acceptance pending |
 
 ## 6. Codex evidence
 
@@ -144,6 +145,16 @@ Do not use a scope-only, checklist-only, read-only review, or isolated maintenan
 | Testing and debugging | Pending | Pending | Pending |
 | Deployment and verification | Pending | Pending | Pending |
 | Submission preparation | Pending | Pending | Pending |
+
+### Approved submission narrative draft
+
+Codex served as Odyssey's principal engineering steward. It preserved the authority of a deterministic Game Engine while integrating model-specific narrative layers, durable receipts, authored fallbacks, recovery, cross-browser verification, deployment, and auditable evidence.
+
+Odyssey feels effortless because Codex carries the operational weight behind the experience.
+
+Sol remembers. Terra bears witness. Luna beckons. The traveler chooses. The Engine keeps the law. Codex keeps the voyage seaworthy.
+
+The Luna sentence is an approved submission-language draft, not a completed-work claim. It becomes publishable as current capability only after Gate 5 implementation and Crystal acceptance.
 
 ## 7. GPT-5.6 evidence
 
@@ -176,6 +187,23 @@ Every claim must be supported by code and a testable product path.
 - Desktop and mobile Divine layouts passed visual review. Reduced-motion content and semantics are covered by automated presentation tests; no browser media-emulation screenshot is claimed for this gate.
 - Gate 3.2's four-second voyage and six-beat arrival contracts, `lib/journey.ts`, and `lib/voyage.ts` remain unchanged.
 - Divine audio and sound cues were intentionally deferred so audio QA could not weaken the text, visual, fallback, D1, or Firefox performance gate.
+
+### Gate 4.1 reading-rhythm checkpoint
+
+**Branch head at deployment:** `0c84789`
+
+**Public Preview Version:** `3be77b47-9bda-4eae-b946-c0eec9c85eb3`
+
+**Git and Cloudflare tag:** `gate4-1-0c84789`
+
+- Waiting now shows only the deity portrait, deity name, and `THE SIGN GATHERS`; it does not render a provisional oracle, provenance claim, or Continue control.
+- A generated oracle appears only after a valid Terra result. Authored fallback appears only after a terminal server failure or the shared ten-second presentation deadline.
+- The client and receipt ledger share bounded deadlines. Response body parsing, reservation time, rate limiting, stale pending recovery, D1 races, and late model completion cannot create a second visible oracle.
+- One canonical public Poseidon request returned `generated` in 4.49 seconds with the correct actor and trigger and no successful OpenAI request ID exposed to the browser.
+- Local runtime review covered the real Troy-to-Poseidon path, authored fallback, continuation to Aeolia, a `1366 x 640` short desktop viewport, a `390 x 844` mobile viewport, and zero browser console warnings or errors.
+- Automated reduced-motion coverage remains green. No browser media-emulation screenshot is claimed for Gate 4.1.
+- `lib/journey.ts`, `lib/voyage.ts`, all six Divine triggers, Gate 3.2 timing, Luna, and audio were not changed.
+- Gate 4.1 remains a Preview candidate until Crystal confirms that the oracle can now be read without a jump-page effect.
 
 ## 9. Verification record
 
