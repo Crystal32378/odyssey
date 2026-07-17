@@ -107,7 +107,7 @@ These are required for shipping but are not separate product pillars:
 | Demo content | Show the working project and specifically explain Codex and GPT-5.6 use | Shot list and timestamp map | Pending |
 | Repository | Public with an appropriate license, or private with designated judge access | Repo visibility and license | License pending |
 | README | Setup, environment, run, test, architecture, GPT-5.6, Codex, decisions, baseline, additions, limitations, and demo path | README audit | Pending |
-| Codex evidence | Submit `/feedback` Session ID from the principal implementation thread | Session ID and representative work links | Recorded: `019f5bfb-c01b-7211-8d17-c7556d6f0d6f` |
+| Codex evidence | Submit `/feedback` Session ID from the principal implementation thread | Session ID and representative work links | Recorded: `019f5fbf-c01b-7211-8d17-c7556d6f0d6f` |
 | Project media | Thumbnail and a small gallery that explains the product | Final image list and source rights check | Pending |
 | Truthful claims | Pre-existing work cannot be presented as Build Week work | This ledger plus PR and commit timestamps | In force |
 | Judging availability | Keep the public judging build working through 2026-08-05 | Deployment monitoring record | Pending |
@@ -125,15 +125,15 @@ Add one row for every meaningful competition-period change.
 | 2026-07-14 | Evidence record initialized and corrected | [#10](https://github.com/Crystal32378/odyssey/pull/10) | Pending merge | Evidence-planning thread; not primary `/feedback` candidate | Documentation-only review | N/A |
 | 2026-07-14 | Gate 2: explicit Sol model, complete island art, cover correction, and Ending Ritual | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `5ef1975` through `7d62b51` | Principal implementation thread | 20 tests, lint, production build | Public Preview Gate 2; evidence in PR #12 |
 | 2026-07-15 | Gate 3.2: compositor voyage camera and six-beat arrival ritual | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `8d63e4f`, `e92e321` | Principal implementation thread | 34 tests; Firefox, Chrome, Safari, mobile, reduced motion, recovery, fourteen shores | Version `690f7ed3-8c9f-460f-a883-58af7fce2d99`; Crystal PASS |
-| 2026-07-16 | Gate 4: D1-backed Terra Divine Presence Layer | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `a967a38` through `b4fac14` | Principal implementation thread | 77 tests, lint, build, D1 concurrency, six-trigger route, public browser QA | Version `045777b3-ba8c-4ca6-9f14-5b0b23e1e53a`; tag `gate4-divine-b4fac14`; Crystal acceptance pending |
-| 2026-07-17 | Gate 4.1: terminal-only Divine oracle reveal | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `0c84789` | Principal implementation thread | 90 tests, lint, build, receipt-deadline and late-result tests, short-desktop/mobile runtime QA | Version `3be77b47-9bda-4eae-b946-c0eec9c85eb3`; tag `gate4-1-0c84789`; Crystal reading-pace acceptance pending |
+| 2026-07-16 | Gate 4: D1-backed Terra Divine Presence Layer | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `a967a38` through `b4fac14` | Principal implementation thread | 77 tests, lint, build, D1 concurrency, six-trigger route, public browser QA | Version `045777b3-ba8c-4ca6-9f14-5b0b23e1e53a`; tag `gate4-divine-b4fac14`; reading-pace HOLD superseded by accepted Gate 4.1 |
+| 2026-07-17 | Gate 4.1: terminal-only Divine oracle reveal | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `0c84789` | Principal implementation thread `019f5fbf-c01b-7211-8d17-c7556d6f0d6f` | 90 tests, lint, build, receipt-deadline and late-result tests, short-desktop/mobile runtime QA | Version `3be77b47-9bda-4eae-b946-c0eec9c85eb3`; tag `gate4-1-0c84789`; Crystal reading-pace acceptance PASS |
 
 ## 6. Codex evidence
 
 ### Primary implementation thread
 
 - **Thread:** Desktop Codex principal task `BuildWeekJul.14/15/16/17`
-- **`/feedback` Session ID:** `019f5bfb-c01b-7211-8d17-c7556d6f0d6f`
+- **`/feedback` Session ID:** `019f5fbf-c01b-7211-8d17-c7556d6f0d6f`
 - **Recorded:** 2026-07-17 after the Gate 4.1 checkpoint and independent CLI credential separation
 - **Why this thread is representative:** It contains the majority of Odyssey's Build Week planning, core implementation, testing, debugging, Cloudflare Preview deployment, evidence maintenance, and the Gate 4.1 handoff. The isolated Cursor CLI session was not used as the primary record because it had not yet performed Luna or other paid engineering work when this ID was captured.
 
@@ -204,7 +204,7 @@ Every claim must be supported by code and a testable product path.
 - Local runtime review covered the real Troy-to-Poseidon path, authored fallback, continuation to Aeolia, a `1366 x 640` short desktop viewport, a `390 x 844` mobile viewport, and zero browser console warnings or errors.
 - Automated reduced-motion coverage remains green. No browser media-emulation screenshot is claimed for Gate 4.1.
 - `lib/journey.ts`, `lib/voyage.ts`, all six Divine triggers, Gate 3.2 timing, Luna, and audio were not changed.
-- Gate 4.1 remains a Preview candidate until Crystal confirms that the oracle can now be read without a jump-page effect.
+- Crystal confirmed on 2026-07-17 that the oracle is readable and no longer feels like a jump-page transition. Gate 4.1 Crystal Acceptance is PASS.
 
 ## 9. Verification record
 
@@ -243,7 +243,7 @@ No target-scope or future item may be written as a current capability.
 - [ ] Codex acceleration explained with concrete examples
 - [ ] key product, design, and engineering decisions documented
 - [ ] GPT-5.6 integration meaningful and verifiable
-- [x] principal `/feedback` Session ID recorded: `019f5bfb-c01b-7211-8d17-c7556d6f0d6f`
+- [x] principal `/feedback` Session ID recorded: `019f5fbf-c01b-7211-8d17-c7556d6f0d6f`
 - [ ] public YouTube demo is no more than 3 minutes
 - [ ] audible English narration explains the product, Codex, and GPT-5.6
 - [ ] demo, README, repository, gallery, and Devpost copy make consistent claims
