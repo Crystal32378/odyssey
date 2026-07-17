@@ -127,6 +127,7 @@ Add one row for every meaningful competition-period change.
 | 2026-07-15 | Gate 3.2: compositor voyage camera and six-beat arrival ritual | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `8d63e4f`, `e92e321` | Principal implementation thread | 34 tests; Firefox, Chrome, Safari, mobile, reduced motion, recovery, fourteen shores | Version `690f7ed3-8c9f-460f-a883-58af7fce2d99`; Crystal PASS |
 | 2026-07-16 | Gate 4: D1-backed Terra Divine Presence Layer | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `a967a38` through `b4fac14` | Principal implementation thread | 77 tests, lint, build, D1 concurrency, six-trigger route, public browser QA | Version `045777b3-ba8c-4ca6-9f14-5b0b23e1e53a`; tag `gate4-divine-b4fac14`; reading-pace HOLD superseded by accepted Gate 4.1 |
 | 2026-07-17 | Gate 4.1: terminal-only Divine oracle reveal | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `0c84789` | Principal implementation thread `019f5fbf-c01b-7211-8d17-c7556d6f0d6f` | 90 tests, lint, build, receipt-deadline and late-result tests, short-desktop/mobile runtime QA | Version `3be77b47-9bda-4eae-b946-c0eec9c85eb3`; tag `gate4-1-0c84789`; Crystal reading-pace acceptance PASS |
+| 2026-07-17 | Gate 5A: authored Penelope Recognition Ritual | [#12](https://github.com/Crystal32378/odyssey/pull/12) | `ae0aa9e`, `9141d3d` | Isolated Codex CLI implementation office | 94 tests, lint, build, Ithaca/Calypso, ordering, image-failure, desktop/mobile/reduced-motion runtime QA | Version `955cdb06-217f-408f-b29d-999e5e734e61`; tag `gate5a-penelope-9141d3d`; Crystal Acceptance pending |
 
 ## 6. Codex evidence
 
@@ -206,7 +207,24 @@ Every claim must be supported by code and a testable product path.
 - `lib/journey.ts`, `lib/voyage.ts`, all six Divine triggers, Gate 3.2 timing, Luna, and audio were not changed.
 - Crystal confirmed on 2026-07-17 that the oracle is readable and no longer feels like a jump-page transition. Gate 4.1 Crystal Acceptance is PASS.
 
-## 9. Verification record
+## 9. Gate 5A Penelope Recognition verification
+
+**Deployed branch head:** `9141d3d`
+
+**Public Preview Version:** `955cdb06-217f-408f-b29d-999e5e734e61`
+
+**Git tag:** `gate5a-penelope-9141d3d`
+
+- Penelope appears automatically only after the completed Ithaca Journey Card and before Restart. She never appears on the Calypso ending.
+- The ritual uses Crystal's approved canonical mark and text. It is authored, silent, stable from first render, and has no Luna request, receipt, or AI-generated provenance label.
+- The approved source PNG remains outside the repository. The versioned `1440 x 810` WebP derivative is 56,142 bytes, has recorded provenance and rights, and was served byte-complete from the public Preview.
+- Image failure removes only the portrait. The canonical text and enabled Restart path remain complete.
+- Four Gate 5A regression tests bring the full suite to 94 passing tests. Lint completed with no errors and the production build passed.
+- Local and public Chrome runtime checks covered `1366 x 768` desktop, `390 x 844` mobile, reduced motion, Ithaca ordering, Calypso exclusion, blocked-image fallback, no horizontal overflow, and zero console errors.
+- `lib/journey.ts`, `lib/voyage.ts`, Journey Memory, Homer, Divine Presence, all Engine outcomes, Luna server work, voice, and soundscape were not changed.
+- Gate 5A is deployed only to the Preview Worker and remains pending Crystal visual and narrative acceptance. Draft PR #12 remains unmerged.
+
+## 10. Verification record
 
 For every implementation PR, preserve:
 
@@ -222,7 +240,7 @@ For every implementation PR, preserve:
 - corresponding judging criterion
 - Codex thread
 
-## 10. Submission claim audit
+## 11. Submission claim audit
 
 Before final submission, classify every statement as one of:
 
@@ -233,7 +251,7 @@ Before final submission, classify every statement as one of:
 
 No target-scope or future item may be written as a current capability.
 
-## 11. Final submission checklist
+## 12. Final submission checklist
 
 - [ ] working public Preview
 - [ ] category confirmed: Apps for Your Life
@@ -250,7 +268,7 @@ No target-scope or future item may be written as a current capability.
 - [ ] final submission completed during Taipei daytime on July 21
 - [ ] Preview maintained through the judging period
 
-## 12. Evidence standard
+## 13. Evidence standard
 
 A final claim is acceptable only when supported by at least one primary artifact:
 
