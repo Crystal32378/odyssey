@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { DivinePresenceStage } from "./divine-presence-stage";
+import { LunaThreshold } from "./luna-threshold";
 import { PenelopeRecognition } from "./penelope-recognition";
 import { requestDivineEncounter } from "../lib/divine-client";
 import { getDivineTriggerForResolvedDeparture, type DivineTriggerId } from "../lib/divine";
@@ -19,6 +20,19 @@ import {
 import { ENDING_REQUEST_TIMEOUT_MS, requestHomer } from "../lib/homer-client";
 import { ISLAND_ART, ISLAND_PRESENTATION } from "../lib/island-art";
 import { createJourneyMemory, getIsland, HomerScene, HomerTransition, ISLANDS, JourneyCard, JourneyMemory, JourneySummary, resolveIsland } from "../lib/journey";
+import { requestLunaEncounter } from "../lib/luna-client";
+import { getLunaTriggerForIslandIndex } from "../lib/luna";
+import {
+  activateLunaEncounter,
+  clearLunaSession,
+  createLunaSession,
+  queueLunaEncounter,
+  readLunaSession,
+  reconcileLunaSession,
+  resetLunaSession,
+  writeLunaSession,
+  type LunaSession,
+} from "../lib/luna-session";
 import { advanceCrossingGate, ARRIVAL_REVEAL_DURATION_MS, ARRIVAL_STAGE_DELAYS_MS, canBeginCrossing, createCrossingGate, crossingCanSettle, getVoyageLeg, JourneyPhase, recoverJourneyPhase, type CrossingGate, VOYAGE_CAMERA_MOBILE_START_SCALE, VOYAGE_CAMERA_START_SCALE, VOYAGE_DURATION_MS } from "../lib/voyage";
 
 type Phase = JourneyPhase;
@@ -62,6 +76,7 @@ export default function Home() {
   const [voyage, setVoyage] = useState<VoyageState | null>(null); const reducedMotion = usePrefersReducedMotion();
   const voyageRef = useRef<VoyageState | null>(null); const crossingSequenceRef = useRef(0); const crossingBusyRef = useRef(false);
   const [divineSession, setDivineSession] = useState<DivineSession | null>(null); const divineSessionRef = useRef<DivineSession | null>(null); const divineRequestRef = useRef<string | null>(null);
+  const [lunaSession, setLunaSession] = useState<LunaSession | null>(null); const lunaSessionRef = useRef<LunaSession | null>(null); const lunaRequestRef = useRef<string | null>(null);
 
   // Session storage is an external source; this one-time hydration intentionally restores its snapshot.
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -81,19 +96,28 @@ export default function Home() {
     } catch {
       sessionStorage.removeItem(SESSION_KEY);
     }
+    let nextDivine: DivineSession;
     try {
-      const next = restoredMemory
+      nextDivine = restoredMemory
         ? recoverDivineEncounter(readDivineSession(sessionStorage), restoredMemory)
         : resetDivineSession(sessionStorage);
-      divineSessionRef.current = next;
-      setDivineSession(next);
     } catch {
-      const next = createDivineSession();
-      divineSessionRef.current = next;
-      setDivineSession(next);
-    } finally {
-      setHydrated(true);
+      nextDivine = createDivineSession();
     }
+    divineSessionRef.current = nextDivine;
+    setDivineSession(nextDivine);
+    try {
+      const restoredLuna = restoredMemory
+        ? reconcileLunaSession(readLunaSession(sessionStorage, nextDivine.journeyId), restoredMemory)
+        : resetLunaSession(sessionStorage, nextDivine.journeyId);
+      lunaSessionRef.current = restoredLuna;
+      setLunaSession(restoredLuna);
+    } catch {
+      const nextLuna = createLunaSession(nextDivine.journeyId);
+      lunaSessionRef.current = nextLuna;
+      setLunaSession(nextLuna);
+    }
+    setHydrated(true);
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
   useEffect(() => { if (!hydrated || phase === "map") return; sessionStorage.setItem(SESSION_KEY, JSON.stringify({ goal, phase, memory, scene, answer, resolution, summary, card } satisfies SavedJourney)); }, [answer, card, goal, hydrated, memory, phase, resolution, scene, summary]);
@@ -101,6 +125,10 @@ export default function Home() {
     if (!hydrated || !divineSession) return;
     try { writeDivineSession(sessionStorage, divineSession); } catch { /* The in-memory receipt still protects this page session. */ }
   }, [divineSession, hydrated]);
+  useEffect(() => {
+    if (!hydrated || !lunaSession) return;
+    try { writeLunaSession(sessionStorage, lunaSession); } catch { /* The D1 receipt remains authoritative. */ }
+  }, [hydrated, lunaSession]);
   const stableDivineRequestState = phase === "island" && Boolean(memory && scene);
   useEffect(() => {
     if (!hydrated || !stableDivineRequestState || !divineSession?.pending) return;
@@ -118,6 +146,23 @@ export default function Home() {
       });
     });
   }, [divineSession?.journeyId, divineSession?.pending, hydrated, stableDivineRequestState]);
+  const stableLunaRequestState = phase === "island" && Boolean(memory && scene);
+  useEffect(() => {
+    if (!hydrated || !stableLunaRequestState || !lunaSession?.pending) return;
+    const journeyId = lunaSession.journeyId;
+    const pending = lunaSession.pending;
+    const requestKey = `${journeyId}:${pending.triggerId}`;
+    if (lunaRequestRef.current === requestKey) return;
+    lunaRequestRef.current = requestKey;
+    void requestLunaEncounter({ journeyId, context: pending.context }).then((outcome) => {
+      setLunaSession((current) => {
+        if (!current || current.journeyId !== journeyId) return current;
+        const next = activateLunaEncounter(current, outcome);
+        lunaSessionRef.current = next;
+        return next;
+      });
+    });
+  }, [hydrated, lunaSession?.journeyId, lunaSession?.pending, stableLunaRequestState]);
   // A changed scene invalidates the browser audio resource and its playback state.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); audioRef.current = null; audioUrlRef.current = null; setAudioStatus("idle"); }, [scene?.narrative]);
@@ -125,6 +170,7 @@ export default function Home() {
   function recordError(error: unknown) { const details = describeError(error); setErrorMessage(details.message); setRequestId(details.requestId); }
   function updateVoyage(next: VoyageState | null) { voyageRef.current = next; setVoyage(next); }
   function updateDivineSession(next: DivineSession | null) { divineSessionRef.current = next; setDivineSession(next); }
+  function updateLunaSession(next: LunaSession | null) { lunaSessionRef.current = next; setLunaSession(next); }
 
   function settleCrossing(crossing: VoyageState) {
     if (!crossingCanSettle(crossing.gate)) return;
@@ -136,7 +182,7 @@ export default function Home() {
     }
   }
 
-  async function beginJourney() { const homeGoal = goal.trim(); if (!homeGoal) return; setErrorMessage(""); setPhase("loading"); const initial = createJourneyMemory(homeGoal); setMemory(initial); try { updateDivineSession(resetDivineSession(sessionStorage)); } catch { updateDivineSession(createDivineSession()); } try { setScene(await requestHomer<HomerScene>({ phase: "enter", islandIndex: 0, homeGoal, timeline: [] })); setPhase("island"); } catch (e) { setPhase("map"); recordError(e); } }
+  async function beginJourney() { const homeGoal = goal.trim(); if (!homeGoal) return; setErrorMessage(""); setPhase("loading"); const initial = createJourneyMemory(homeGoal); setMemory(initial); let nextDivine: DivineSession; try { nextDivine = resetDivineSession(sessionStorage); } catch { nextDivine = createDivineSession(); } updateDivineSession(nextDivine); try { updateLunaSession(resetLunaSession(sessionStorage, nextDivine.journeyId)); } catch { updateLunaSession(createLunaSession(nextDivine.journeyId)); } try { setScene(await requestHomer<HomerScene>({ phase: "enter", islandIndex: 0, homeGoal, timeline: [] })); setPhase("island"); } catch (e) { setPhase("map"); recordError(e); } }
   function resolveAnswer() {
     const playerInput = answer.trim();
     if (!playerInput || !memory || crossingBusyRef.current || !canBeginCrossing(phase, Boolean(voyageRef.current))) return;
@@ -160,6 +206,7 @@ export default function Home() {
       const transition = await requestHomer<HomerTransition>({ phase: "resolve", islandIndex: memoryAtDeparture.currentIsland, homeGoal: memoryAtDeparture.homeGoal, timeline: memoryAtDeparture.timeline, playerInput });
       const current = voyageRef.current; if (!current || current.id !== crossingId) return;
       const updated = resolveIsland(memoryAtDeparture, island, transition.action_tag, playerInput); setMemory(updated); setResolution(transition.resolution); setAnswer("");
+      if (lunaSessionRef.current) updateLunaSession(reconcileLunaSession(lunaSessionRef.current, updated));
       setScene({ narrative: transition.next_narrative, question: transition.next_question });
       const divineTrigger = getDivineTriggerForResolvedDeparture({ departureIslandIndex: memoryAtDeparture.currentIsland, resolvedCurrentIsland: updated.currentIsland, resolvedEnding: updated.ending }) || undefined;
       const next = { ...current, gate: advanceCrossingGate(current.gate, { type: "api-resolved" }), ending: updated.ending, divineTrigger, resolvedMemory: updated };
@@ -201,7 +248,8 @@ export default function Home() {
     if (!current) return;
     updateDivineSession(dismissDivineEncounter(current));
   }
-  function resetJourney() { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); sessionStorage.removeItem(SESSION_KEY); clearDivineSession(sessionStorage); divineRequestRef.current = null; updateDivineSession(null); crossingBusyRef.current = false; updateVoyage(null); setGoal(""); setPhase("map"); setMemory(null); setScene(null); setAnswer(""); setResolution(""); setSummary(null); setCard(null); setEndingStage("idle"); setErrorMessage(""); setRequestId(""); }
+  function openLunaThreshold() { if (!memory || !lunaSessionRef.current) return; updateLunaSession(queueLunaEncounter(lunaSessionRef.current, memory)); }
+  function resetJourney() { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); sessionStorage.removeItem(SESSION_KEY); clearDivineSession(sessionStorage); divineRequestRef.current = null; updateDivineSession(null); clearLunaSession(sessionStorage); lunaRequestRef.current = null; updateLunaSession(null); crossingBusyRef.current = false; updateVoyage(null); setGoal(""); setPhase("map"); setMemory(null); setScene(null); setAnswer(""); setResolution(""); setSummary(null); setCard(null); setEndingStage("idle"); setErrorMessage(""); setRequestId(""); }
 
   if (phase === "map") return <Map goal={goal} setGoal={setGoal} begin={beginJourney} error={errorMessage} />;
   if (!memory || !scene || phase === "loading") return <main className="journey voyage-loading"><p className="eyebrow">THE FIRST SHORE</p><h1>The map remembers your name.</h1><p>Homer gathers the words of your return.</p></main>;
@@ -213,12 +261,18 @@ export default function Home() {
   if (memory.ending) return <Ending memory={memory} scene={scene} summary={summary} card={card} phase={phase} stage={endingStage} generate={generateEnding} reset={resetJourney} error={errorMessage} />;
 
   const island = getIsland(memory.currentIsland); const index = memory.currentIsland; const presentation = ISLAND_PRESENTATION[island.id];
+  const lunaTriggerId = getLunaTriggerForIslandIndex(index);
+  const lunaSeen = Boolean(lunaTriggerId && lunaSession?.seenTriggerIds.includes(lunaTriggerId));
+  const lunaPending = Boolean(lunaTriggerId && lunaSession?.pending?.triggerId === lunaTriggerId);
+  const lunaActive = lunaTriggerId && lunaSession?.active?.encounter.triggerId === lunaTriggerId ? lunaSession.active : null;
+  const lunaSettled = !lunaTriggerId || lunaSeen || Boolean(lunaActive);
   const presentationStyle = {
     "--content-width": presentation.contentWidth || "590px",
     "--arrival-reveal-duration": `${ARRIVAL_REVEAL_DURATION_MS}ms`,
     "--arrival-name-delay": `${ARRIVAL_STAGE_DELAYS_MS.name}ms`,
     "--arrival-memory-delay": `${ARRIVAL_STAGE_DELAYS_MS.memory}ms`,
     "--arrival-homer-delay": `${ARRIVAL_STAGE_DELAYS_MS.homer}ms`,
+    "--arrival-luna-delay": "1700ms",
     "--arrival-question-delay": `${ARRIVAL_STAGE_DELAYS_MS.question}ms`,
     "--arrival-response-delay": `${ARRIVAL_STAGE_DELAYS_MS.response}ms`,
   } as CSSProperties;
@@ -227,7 +281,7 @@ export default function Home() {
     <div className="progress"><span style={{ width: `${((index + 1) / 14) * 100}%` }} /></div>
     <section className={`island-layout island-${island.id} content-${presentation.contentSide} scrim-${presentation.scrimDirection}`} key={island.id} style={presentationStyle}>
       <IslandArtwork islandId={island.id} name={island.name}/>
-      <article className="narrative">
+      <article className={`narrative${lunaTriggerId && !lunaSeen ? " narrative-has-luna" : ""}`}>
         <div className="arrival-name stage-step stage-step-name"><p className="eyebrow">ISLAND {String(index + 1).padStart(2, "0")} · {island.name.toUpperCase()}</p><h1>{island.name}</h1><p className="stage-epithet">{island.epithet}</p></div>
         <section className="memory-beat stage-step stage-step-memory" aria-label="The sea remembers"><span>THE SEA REMEMBERS</span><p>{resolution || `Your Ithaca is named: ${memory.homeGoal}.`}</p></section>
         <section className="homer-witness stage-step stage-step-homer" aria-label="Homer bears witness">
@@ -235,12 +289,13 @@ export default function Home() {
           <p className="story" aria-live="polite">{scene.narrative}</p>
           <AudioButton status={audioStatus} play={hearHomer}/>
         </section>
-        <section className="choice-beat stage-step stage-step-question"><p className="island-question">{scene.question}</p></section>
-        <div className="response-band stage-step stage-step-response">
+        {lunaTriggerId && !lunaSeen && <LunaThreshold triggerId={lunaTriggerId} pending={lunaPending} outcome={lunaActive} recovered={Boolean(lunaSession?.recovered)} onOpen={openLunaThreshold}/>}
+        {lunaSettled && <section className="choice-beat stage-step stage-step-question"><p className="island-question">{scene.question}</p></section>}
+        {lunaSettled && <div className="response-band stage-step stage-step-response">
           <label className="answer-label" htmlFor="answer">Your answer</label>
           <textarea id="answer" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Leave a few words for the sea…"/>
           <div className="journey-actions"><button className="answer-shore" onClick={resolveAnswer} disabled={!answer.trim()}>{island.id === "ithaca" ? "COMPLETE THE RETURN" : "ANSWER THE SHORE"}</button>{errorMessage && <ErrorBox message={errorMessage} requestId={requestId} retry={resolveAnswer}/>}<button className="new-voyage" onClick={resetJourney}>START A NEW JOURNEY</button></div>
-        </div>
+        </div>}
       </article>
     </section>
   </main>;
