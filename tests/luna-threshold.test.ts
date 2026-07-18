@@ -13,7 +13,8 @@ const assets = [
 
 test("threshold requires an explicit player gesture and never shows provisional character text", () => {
   assert.match(component, /!pending && !outcome \? \(/);
-  assert.match(component, /className="luna-action" type="button" tabIndex=\{1\} onClick=\{onOpen\}/);
+  assert.match(component, /className="luna-action" type="button" onClick=\{onOpen\}/);
+  assert.doesNotMatch(component, /tabIndex=\{[1-9]/);
   assert.match(component, /pending \? \([\s\S]*THE THRESHOLD GATHERS/);
   assert.match(component, /outcome \? \([\s\S]*<blockquote/);
   assert.doesNotMatch(component, /registry\.fallback|setTimeout|fetch\(|new Audio|<audio/);

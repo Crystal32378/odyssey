@@ -287,11 +287,11 @@ export default function Home() {
       <article className={`narrative${lunaTriggerId && !lunaSeen && !lunaPresentationDone ? " narrative-has-luna" : ""}`}>
         <div className="arrival-name stage-step stage-step-name"><p className="eyebrow">ISLAND {String(index + 1).padStart(2, "0")} · {island.name.toUpperCase()}</p><h1>{island.name}</h1><p className="stage-epithet">{island.epithet}</p></div>
         <section className="memory-beat stage-step stage-step-memory" aria-label="The sea remembers"><span>THE SEA REMEMBERS</span><p>{resolution || `Your Ithaca is named: ${memory.homeGoal}.`}</p></section>
+        {lunaTriggerId && !lunaSeen && !lunaPresentationDone && <LunaThreshold triggerId={lunaTriggerId} pending={lunaPending} outcome={lunaActive} recovered={Boolean(lunaSession?.recovered)} onOpen={openLunaThreshold} onContinue={continueLunaThreshold}/>}
         <section className="homer-witness stage-step stage-step-homer" aria-label="Homer bears witness">
           <p className="story" aria-live="polite">{scene.narrative}</p>
           <AudioButton status={audioStatus} play={hearHomer}/>
         </section>
-        {lunaTriggerId && !lunaSeen && !lunaPresentationDone && <LunaThreshold triggerId={lunaTriggerId} pending={lunaPending} outcome={lunaActive} recovered={Boolean(lunaSession?.recovered)} onOpen={openLunaThreshold} onContinue={continueLunaThreshold}/>}
         {lunaSettled && <section className="choice-beat stage-step stage-step-question"><p className="island-question">{scene.question}</p></section>}
         {lunaSettled && <div className="response-band stage-step stage-step-response">
           <label className="answer-label" htmlFor="answer">Your answer</label>

@@ -38,7 +38,7 @@ export function LunaThreshold({ triggerId, pending, outcome, recovered, onOpen, 
 
       <div className="luna-threshold-copy" role="status" aria-live="polite" aria-busy={pending}>
         {!pending && !outcome ? (
-          <button className="luna-action" type="button" tabIndex={1} onClick={onOpen}>{registry.presentation.thresholdLabel}</button>
+          <button className="luna-action" type="button" onClick={onOpen}>{registry.presentation.thresholdLabel}</button>
         ) : pending ? (
           <p className="luna-pending">THE THRESHOLD GATHERS</p>
         ) : outcome ? (

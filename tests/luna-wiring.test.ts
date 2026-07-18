@@ -7,12 +7,12 @@ const page = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
 const route = readFileSync(new URL("../app/api/divine/route.ts", import.meta.url), "utf8");
 const journeyBefore = readFileSync(new URL("../lib/journey.ts", import.meta.url), "utf8");
 
-test("stable Homer witness precedes the explicit Luna threshold, then choice and response", () => {
+test("natural focus order places the Luna threshold before Homer controls, then choice and response", () => {
   const witness = page.indexOf('<section className="homer-witness');
   const threshold = page.indexOf("<LunaThreshold");
   const choice = page.indexOf('{lunaSettled && <section className="choice-beat');
   const response = page.indexOf('{lunaSettled && <div className="response-band');
-  assert.ok(witness >= 0 && witness < threshold && threshold < choice && choice < response);
+  assert.ok(threshold >= 0 && threshold < witness && witness < choice && choice < response);
   assert.match(page, /const lunaSettled = !lunaTriggerId \|\| lunaSeen \|\| lunaPresentationDone/);
   assert.match(page, /onOpen=\{openLunaThreshold\}/);
   assert.match(page, /onContinue=\{continueLunaThreshold\}/);
