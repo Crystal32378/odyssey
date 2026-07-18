@@ -206,11 +206,11 @@ await evaluate(`document.querySelector('.homer-audio-controls button').click()`)
 process.stderr.write("Homer request started.\n");
 await delay(650);
 const ducked = await evaluate(`({count:window.__odysseyAudio.length,sea:window.__odysseyAudio[0].volume,voicePaused:window.__odysseyAudio.at(-1).paused})`);
-if (ducked.count !== 3 || ducked.sea > 0.04 || ducked.voicePaused) throw new Error(`Voice ducking failed: ${JSON.stringify(ducked)}`);
+if (ducked.count !== 3 || ducked.sea > 0.018 || ducked.voicePaused) throw new Error(`Voice ducking failed: ${JSON.stringify(ducked)}`);
 await evaluate(`document.querySelector('.homer-audio-controls button').click()`);
 await delay(380);
 const restored = await evaluate(`window.__odysseyAudio[0].volume`);
-if (restored < 0.12) throw new Error(`Ambience did not recover after pause: ${restored}`);
+if (restored < 0.09 || restored > 0.1) throw new Error(`Ambience did not recover after pause: ${restored}`);
 process.stderr.write("Homer ducking evidence complete.\n");
 
 const result = {

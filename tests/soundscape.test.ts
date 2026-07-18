@@ -5,6 +5,9 @@ import {
   AMBIENCE_VOLUME,
   DIVINE_BIRD_SOURCE,
   DIVINE_BIRD_VOLUME,
+  PENELOPE_AMBIENCE_VOLUME,
+  PENELOPE_LOOM_SOURCE,
+  PENELOPE_LOOM_VOLUME,
   DUCKED_VOLUME,
   SAILING_DURATION_MS,
   SEA_AMBIENCE_SOURCE,
@@ -134,6 +137,27 @@ test("Divine accent is sparse, non-looping, non-stacking, muted, and fail-open",
   controller.toggleMute();
   assert.ok(bird.pauseCount >= 2);
   assert.equal(bird.currentTime, 0);
+});
+
+test("Penelope loom is non-looping, non-stacking, muted, and restores the sea", async () => {
+  const { controller, layers } = setup();
+  controller.enterJourney();
+  await settleFade();
+  const sea = layers.get(SEA_AMBIENCE_SOURCE)!;
+  controller.playPenelopeLoom();
+  await settleFade();
+  const loom = layers.get(PENELOPE_LOOM_SOURCE)!;
+  assert.equal(loom.loop, false);
+  assert.equal(loom.volume, PENELOPE_LOOM_VOLUME);
+  assert.equal(sea.volume, PENELOPE_AMBIENCE_VOLUME);
+  controller.playPenelopeLoom();
+  assert.equal(layers.size, 2);
+  assert.ok(loom.pauseCount >= 1);
+  loom.onended?.();
+  await settleFade();
+  assert.equal(sea.volume, AMBIENCE_VOLUME);
+  controller.toggleMute();
+  assert.ok(loom.pauseCount >= 3);
 });
 
 test("blocked and failed assets fail open without changing product state", async () => {

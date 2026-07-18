@@ -19,7 +19,7 @@ test("Penelope appears only for a completed Ithaca Journey Card and before Resta
   assert.ok(penelopeIndex < restartIndex, "Penelope must precede the ending Restart control");
 });
 
-test("the recognition is authored, silent, stable, and independent of the image", () => {
+test("the recognition remains authored, stable, and independent of its optional later soundscape", () => {
   assert.match(component, /THE THREAD REMEMBERS/);
   assert.match(component, /I did not remain unchanged while you crossed the sea\. Do not ask whether I waited; show me what in you has truly returned\./);
   assert.match(component, /onError=\{\(\) => setImageFailed\(true\)\}/);
@@ -29,6 +29,12 @@ test("the recognition is authored, silent, stable, and independent of the image"
   const lineIndex = component.indexOf("I did not remain unchanged");
   assert.ok(imageStart >= 0 && imageEnd < lineIndex, "canonical text must not depend on image success");
   assert.doesNotMatch(component, /gpt-5\.6-luna|AI-generated|fetch\(|<audio|new Audio|button/);
+  assert.match(component, /PENELOPE_LOOM_SESSION_KEY/);
+  assert.match(component, /soundscape\?\.playPenelopeLoom\(\)/);
+  assert.match(component, /scheduleStop = \(\) => \{ stopLoomTimer\.current = setTimeout\(\(\) => soundscape\?\.stopPenelopeLoom\(\), 0\); \}/);
+  assert.match(component, /if \(ownsLoom\.current\)[\s\S]*clearTimeout\(stopLoomTimer\.current\)/);
+  assert.match(component, /sessionStorage\.getItem\(PENELOPE_LOOM_SESSION_KEY\) === "played"/);
+  assert.match(page, /sessionStorage\.removeItem\(PENELOPE_LOOM_SESSION_KEY\)/);
 });
 
 test("the optimized approved asset is the recorded immutable derivative", () => {

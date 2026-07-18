@@ -64,15 +64,19 @@ Frozen record date: **2026-07-18**. These files support an optional authored Sou
 
 ### navette de métier à tisser.wav — Naïma / Freesound
 
-- Decision: **DEFER**. The final submission-safe MVP contains only sea ambience, sailing texture, Mute/Unmute, Homer ducking, and fail-open behavior; no loom playback was added.
+- Decision: **KEEP** as the later optional Penelope-only loom texture; this does not revise the authored Gate 5A ritual or claim that Gate 5A originally contained audio.
 - Creator: Naïma.
 - Exact asset page: <https://freesound.org/people/Na%C3%AFma/sounds/510266/>.
 - License: CC0 1.0 Universal, <https://creativecommons.org/publicdomain/zero/1.0/>.
 - Download date: `2026-07-18`.
 - Original filename: `510266__naima__navette-de-metier-a-tisser(1).wav` (downloaded file); displayed title `navette de métier à tisser.wav`.
+- Preserved source master: `assets/audio-sources/510266__naima__navette-de-metier-a-tisser.wav`.
 - Original SHA-256: `9e0386371b70aecd63c786333bf3572d001bdc1b708eb602544a1534fb869ef3`.
 - Original size/format: 10,241,008 bytes; 58.051429 seconds; stereo PCM WAV; 44.1 kHz; 16-bit.
-- No repo master or runtime derivative was created because the asset is not retained in this gate.
+- Runtime derivative: `public/audio/penelope-loom.wav`.
+- Derivative SHA-256: `5fba2f7e7585efdbcb73e68b60896f156f0418104f8a93d403ea8e9deb28ef33`.
+- Derivative: 740,924 bytes; 4.200000 seconds; stereo PCM WAV; 44.1 kHz; 16-bit.
+- Processing: selected source seconds 2.000–6.200, containing two principal shuttle movements and a restrained frame response; linear gain `0.6` (`-4.44 dB`); 250 ms linear fade-in and fade-out; no EQ, compression, denoising, channel, resampling, pitch, time, reverb, or synthetic processing.
 
 ## Evidence and runtime boundary
 

@@ -8,7 +8,7 @@
         "src": "http://localhost:4173/audio/aegean-sea-ambience.mp3",
         "loop": true,
         "paused": false,
-        "volume": 0.13
+        "volume": 0.095
       }
     ],
     "label": "MUTE",
@@ -43,8 +43,8 @@
   },
   "ducked": {
     "count": 3,
-    "sea": 0.035,
+    "sea": 0.015,
     "voicePaused": false
   },
-  "restored": 0.13
+  "restored": 0.095
 }

@@ -1,11 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { PENELOPE_LOOM_SESSION_KEY, soundscape } from "../lib/soundscape";
 
 const PENELOPE_IMAGE = "/characters/v1/penelope.webp";
 
 export function PenelopeRecognition() {
   const [imageFailed, setImageFailed] = useState(false);
+  const ownsLoom = useRef(false);
+  const stopLoomTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const scheduleStop = () => { stopLoomTimer.current = setTimeout(() => soundscape?.stopPenelopeLoom(), 0); };
+    if (ownsLoom.current) {
+      if (stopLoomTimer.current) clearTimeout(stopLoomTimer.current);
+      stopLoomTimer.current = null;
+      return scheduleStop;
+    }
+    try {
+      if (sessionStorage.getItem(PENELOPE_LOOM_SESSION_KEY) === "played") return;
+      sessionStorage.setItem(PENELOPE_LOOM_SESSION_KEY, "played");
+    } catch { /* Session recovery remains visual and complete without audio storage. */ }
+    ownsLoom.current = true;
+    soundscape?.playPenelopeLoom();
+    return scheduleStop;
+  }, []);
 
   return (
     <section

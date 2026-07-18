@@ -34,7 +34,7 @@ import {
   type LunaSession,
 } from "../lib/luna-session";
 import { advanceCrossingGate, ARRIVAL_REVEAL_DURATION_MS, ARRIVAL_STAGE_DELAYS_MS, canBeginCrossing, createCrossingGate, crossingCanSettle, getVoyageLeg, JourneyPhase, recoverJourneyPhase, type CrossingGate, VOYAGE_CAMERA_MOBILE_START_SCALE, VOYAGE_CAMERA_START_SCALE, VOYAGE_DURATION_MS } from "../lib/voyage";
-import { soundscape } from "../lib/soundscape";
+import { PENELOPE_LOOM_SESSION_KEY, soundscape } from "../lib/soundscape";
 
 type Phase = JourneyPhase;
 type AudioStatus = "idle" | "loading" | "ready" | "playing" | "error";
@@ -263,7 +263,7 @@ export default function Home() {
   }
   function openLunaThreshold() { if (!memory || !lunaSessionRef.current) return; updateLunaSession(queueLunaEncounter(lunaSessionRef.current, memory)); }
   function continueLunaThreshold() { if (lunaTriggerId && lunaActive) setCompletedLunaPresentation(lunaTriggerId); }
-  function resetJourney() { audioRef.current?.pause(); soundscape?.leaveJourney(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); sessionStorage.removeItem(SESSION_KEY); clearDivineSession(sessionStorage); divineRequestRef.current = null; updateDivineSession(null); clearLunaSession(sessionStorage); lunaRequestRef.current = null; updateLunaSession(null); setCompletedLunaPresentation(null); crossingBusyRef.current = false; updateVoyage(null); setGoal(""); setPhase("map"); setMemory(null); setScene(null); setAnswer(""); setResolution(""); setSummary(null); setCard(null); setEndingStage("idle"); setErrorMessage(""); setRequestId(""); }
+  function resetJourney() { audioRef.current?.pause(); soundscape?.leaveJourney(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); sessionStorage.removeItem(PENELOPE_LOOM_SESSION_KEY); sessionStorage.removeItem(SESSION_KEY); clearDivineSession(sessionStorage); divineRequestRef.current = null; updateDivineSession(null); clearLunaSession(sessionStorage); lunaRequestRef.current = null; updateLunaSession(null); setCompletedLunaPresentation(null); crossingBusyRef.current = false; updateVoyage(null); setGoal(""); setPhase("map"); setMemory(null); setScene(null); setAnswer(""); setResolution(""); setSummary(null); setCard(null); setEndingStage("idle"); setErrorMessage(""); setRequestId(""); }
 
   if (phase === "map") return <Map goal={goal} setGoal={setGoal} begin={beginJourney} error={errorMessage} />;
   if (!memory || !scene || phase === "loading") return <main className="journey voyage-loading"><p className="eyebrow">THE FIRST SHORE</p><h1>The map remembers your name.</h1><p>Homer gathers the words of your return.</p></main>;
