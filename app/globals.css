@@ -26,8 +26,10 @@ button { cursor: pointer; }
 .world-entry { position: absolute; left: 2.2vw; top: auto; bottom: 12vh; width: min(405px, 30vw); color: #15384d; text-shadow: 0 1px 2px rgba(255,255,255,.65); }
 .world-entry h1 { margin: 0; color: #15384d; font-size: clamp(2rem, 3.05vw, 4rem); line-height: .95; font-weight: 400; letter-spacing: -.035em; }
 .world-entry p { margin: 22px 0 0; color: #17394d; font-size: .98rem; line-height: 1.45; letter-spacing: .025em; }
-.world-entry p em { color: #173f62; font-style: italic; }
+.world-entry .world-prompt { margin-top: 16px; }
+.world-entry .world-stakes { max-width: 385px; margin-top: 14px; font-size: .78rem; line-height: 1.45; }
 .world-form { margin-top: 18px; max-width: 390px; display: grid; gap: 12px; }
+.world-form label { color: #173e55; font-size: .65rem; font-weight: 700; letter-spacing: .16em; }
 .world-form input { width: 100%; border: 1px solid rgba(45,69,76,.45); outline: 0; padding: 15px 16px; color: #16384b; background: rgba(246,241,229,.58); box-shadow: 0 3px 8px rgba(31,49,53,.15); font-size: .98rem; }
 .world-form input::placeholder { color: rgba(31,57,68,.62); font-style: italic; }
 .world-form button { justify-self: start; border: 1px solid #c3a263; padding: 16px 26px; background: #143b55; color: #f0d7a2; box-shadow: inset 0 0 0 3px #17354a, inset 0 0 0 4px #ba9858, 0 4px 10px rgba(31,49,53,.28); letter-spacing: .12em; font-size: .72rem; }
@@ -174,9 +176,11 @@ button { cursor: pointer; }
 .journey-luna-active:has(.luna-threshold[data-luna-state="threshold"]) .homer-audio-controls > button:hover,
 .journey-luna-active:has(.luna-threshold[data-luna-state="threshold"]) .homer-audio-controls > button:focus-visible { border-color: rgba(202,166,100,.72); background: rgba(177,139,76,.12); color: #e7d5af; }
 .journey-luna-active:has(.luna-threshold[data-luna-state="threshold"]) .homer-audio small { color: rgba(113,111,103,.72); font-size: .6rem; }
-.answer-shore { margin-top: 13px; }
-.journey-actions { display: flex; align-items: baseline; gap: 25px; flex-wrap: wrap; }
+.answer-shore { min-height: 44px; margin-top: 13px; }
+.journey-actions { display: flex; align-items: center; gap: 15px 20px; flex-wrap: wrap; }
+.answer-memory-note { color: #8f918a; font-size: .68rem; font-weight: 400; letter-spacing: .045em; }
 .journey-actions .journey-error { flex-basis: 100%; }
+.journey-system-actions { width: 100%; margin-top: 18px; border-top: 1px solid rgba(111,116,111,.2); padding-top: 8px; }
 .slice-complete { margin-top: 35px; border-left: 2px solid #b59453; padding: 5px 0 5px 20px; display: grid; gap: 9px; }
 .slice-complete span { color: #b59453; font-size: .62rem; letter-spacing: .17em; }
 .slice-complete strong { color: #e4d9c4; font-size: 1.15rem; font-weight: 400; }
@@ -184,7 +188,7 @@ button { cursor: pointer; }
 .journey-error { margin-top: 22px; border: 1px solid #74493e; padding: 16px; display: grid; justify-items: start; gap: 7px; color: #d7ad9d; background: rgba(77,35,28,.18); }
 .journey-error strong { font-weight: 400; }.journey-error span, .journey-error small { color: #9a8b84; font-size: .72rem; }
 .journey-error button, .new-voyage { border: 0; border-bottom: 1px solid currentColor; padding: 2px 0; background: transparent; color: #c9a965; font-size: .64rem; letter-spacing: .12em; }
-.new-voyage { margin-top: 0; color: #6f746f; }
+.new-voyage { min-height: 44px; margin-top: 0; display: inline-flex; align-items: center; color: #777b76; letter-spacing: .06em; text-transform: none; }
 .ending { min-height: 100vh; padding: 10vh max(6vw,24px); text-align: center; overflow: clip; background: radial-gradient(circle at 50% 0, #27424c, #0c1012 58%); }
 .ending-intro { animation: ending-reveal .8s ease-out both; }.ending-seal { color: var(--gold); font-size: 3rem; }.ending h1 { max-width: 1100px; margin: 15px auto; font-size: clamp(3rem, 7vw, 7rem); line-height: .95; font-weight: 400; text-wrap: balance; }.ending-lede { color: #b8c5c1; line-height: 1.6; max-width: 650px; margin: auto; font-size: 1.1rem; }
 .ending-ritual { max-width: 720px; margin: 46px auto 0; padding: 26px 0 30px; border-block: 1px solid rgba(168,138,80,.42); text-align: left; }
