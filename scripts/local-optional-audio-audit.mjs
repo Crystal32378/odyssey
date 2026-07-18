@@ -77,13 +77,14 @@ await send("Page.addScriptToEvaluateOnNewDocument", { source: `
 ` });
 await send("Page.navigate", { url: baseUrl });
 await delay(900);
+await evaluate(`localStorage.removeItem('odyssey.soundscape.muted.v1')`);
 
 await evaluate(`(()=>{
   const button=document.createElement('button');
   button.id='audio-audit-unlock';
   button.style='position:fixed;left:8px;top:8px;width:120px;height:48px;z-index:99999';
   button.textContent='START AUDIO';
-  button.addEventListener('click',async()=>{const m=await import('/lib/soundscape.ts');m.soundscape.enterJourney();window.__soundscape=m.soundscape;button.dataset.started='true';},{once:true});
+  button.addEventListener('click',async()=>{const m=await import('/lib/soundscape.ts');if(m.soundscape.snapshot().muted)m.soundscape.toggleMute();m.soundscape.enterJourney();window.__soundscape=m.soundscape;button.dataset.started='true';},{once:true});
   document.body.append(button);
 })()`);
 await send('Input.dispatchMouseEvent',{type:'mousePressed',x:40,y:30,button:'left',clickCount:1});
@@ -105,39 +106,37 @@ const divine = await evaluate(`(async()=>{
   const ReactDOMClient=await import('/node_modules/.vite/deps/react-dom_client.js');
   const createRoot=ReactDOMClient.createRoot || ReactDOMClient.default?.createRoot;
   const {DivinePresenceStage}=await import('/app/divine-presence-stage.tsx');
-  const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
-  const encounter={triggerId:'cyclops_departure',actorId:'poseidon',source:'generated',spokenLine:'The sea keeps the name.',mark:'THE SEA KNOWS',memoryRefs:[]};
-  let continued=0; const render=()=>root.render(React.createElement(DivinePresenceStage,{triggerId:'cyclops_departure',encounter,pending:false,onContinue:()=>{continued+=1;root.unmount()}}));
-  render(); await new Promise(r=>setTimeout(r,220)); render(); await new Promise(r=>setTimeout(r,220));
+  const encounters=[['cyclops_departure','poseidon'],['circe_threshold','hermes'],['thrinacia_arrival','helios'],['thrinacia_departure','zeus'],['calypso_departure','ino'],['ithaca_threshold','athena']];
+  const evidence=[];
+  for(const [triggerId,actorId] of encounters){
+    const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
+    const encounter={triggerId,actorId,source:'generated',spokenLine:'The sea keeps the name.',mark:'THE SEA KNOWS',memoryRefs:[]};
+    root.render(React.createElement(DivinePresenceStage,{triggerId,encounter,pending:false,onContinue:()=>root.unmount()}));
+    await new Promise(r=>setTimeout(r,360));
+    const layer=window.__audio.find(a=>a.src.endsWith('/audio/divine-coastal-bird.wav'));
+    evidence.push({triggerId,actorId,paused:layer?.paused,muted:layer?.muted,volume:layer?.volume,currentTime:layer?.currentTime,playCalls:layer?.__playCalls,playResolved:layer?.__playResolved,playRejected:layer?.__playRejected});
+    root.unmount();await new Promise(r=>setTimeout(r,40));
+  }
   const layers=window.__audio.filter(a=>a.src.endsWith('/audio/divine-coastal-bird.wav'));
-  const before={count:layers.length,loop:layers[0]?.loop,paused:layers[0]?.paused,muted:layers[0]?.muted,volume:layers[0]?.volume,currentTime:layers[0]?.currentTime,playCalls:layers[0]?.__playCalls,playResolved:layers[0]?.__playResolved,playRejected:layers[0]?.__playRejected};
-  host.querySelector('button').click();await new Promise(r=>setTimeout(r,40));
-  return {before,after:{continued,paused:layers[0]?.paused,count:window.__audio.filter(a=>a.src.endsWith('/audio/divine-coastal-bird.wav')).length}};
+  return {count:layers.length,loop:layers[0]?.loop,pausedAfterAll:layers[0]?.paused,evidence};
 })()`);
 
-await evaluate(`(()=>{
-  sessionStorage.removeItem('odyssey.penelope.loom-played.v1');
-  const button=document.createElement('button');button.id='ithaca-reveal-audit';button.style='position:fixed;left:8px;top:70px;width:160px;height:48px;z-index:99999';button.textContent='REVEAL MY JOURNEY';
-  button.addEventListener('click',async()=>{const played=await window.__soundscape.beginIthacaReturn();if(played)sessionStorage.setItem('odyssey.penelope.loom-played.v1','played');button.dataset.played=String(played)},{once:true});
-  document.body.append(button);
-})()`);
-await send('Input.dispatchMouseEvent',{type:'mousePressed',x:50,y:90,button:'left',clickCount:1});
-await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:50,y:90,button:'left',clickCount:1});
+const ithacaStarted = await evaluate(`(async()=>{sessionStorage.removeItem('odyssey.penelope.loom-played.v1');const played=await window.__soundscape.beginIthacaReturn();if(played)sessionStorage.setItem('odyssey.penelope.loom-played.v1','played');return played})()`,true);
 await delay(600);
 const penelope = await evaluate(`(async()=>{
   const looms=window.__audio.filter(a=>a.src.endsWith('/audio/penelope-loom.wav'));
   const sea=window.__audio.find(a=>a.src.endsWith('/audio/aegean-sea-ambience.mp3'));
   const active={count:looms.length,loop:looms[0]?.loop,paused:looms[0]?.paused,muted:looms[0]?.muted,volume:looms[0]?.volume,currentTime:looms[0]?.currentTime,playCalls:looms[0]?.__playCalls,playResolved:looms[0]?.__playResolved,playRejected:looms[0]?.__playRejected,sea:sea?.volume,guard:sessionStorage.getItem('odyssey.penelope.loom-played.v1')};
   const replay=await window.__soundscape.beginIthacaReturn();
-  looms[0].onended?.();await new Promise(r=>setTimeout(r,360));
+  looms[0]?.onended?.();await new Promise(r=>setTimeout(r,360));
   const completed={count:window.__audio.filter(a=>a.src.endsWith('/audio/penelope-loom.wav')).length,paused:looms[0]?.paused,sea:sea?.volume,replay};
   sessionStorage.removeItem('odyssey.penelope.loom-played.v1');
-  return {active,completed,restartGuardCleared:sessionStorage.getItem('odyssey.penelope.loom-played.v1')===null};
+  return {ithacaStarted:${JSON.stringify(ithacaStarted)},active,completed,restartGuardCleared:sessionStorage.getItem('odyssey.penelope.loom-played.v1')===null};
 })()`);
 
 const result = { commit: process.env.AUDIT_COMMIT || "9db562f", url: baseUrl, viewport: mobile ? "mobile" : "desktop", globalAudio, divine, penelope, calypso: { loomLayersWithoutPenelope: 0 }, events };
 if (!globalAudio.sea || globalAudio.snapshot.muted || globalAudio.sea.paused || globalAudio.sea.currentTime <= 0 || globalAudio.sea.playResolved !== 1 || globalAudio.sea.playRejected.length) throw new Error(`Sea runtime evidence failed: ${JSON.stringify(globalAudio)}`);
-if (divine.before.count !== 1 || divine.before.loop !== false || divine.before.paused || divine.before.currentTime <= 0 || divine.before.playResolved !== 1 || divine.before.playRejected.length || divine.after.count !== 1 || !divine.after.paused || divine.after.continued !== 1) throw new Error(`Divine runtime evidence failed: ${JSON.stringify(divine)}`);
+if (divine.count !== 1 || divine.loop !== false || !divine.pausedAfterAll || divine.evidence.length !== 6 || divine.evidence.some((entry,index)=>entry.paused || entry.muted || entry.currentTime <= 0 || entry.playCalls !== index+1 || entry.playResolved !== index+1 || entry.playRejected.length)) throw new Error(`Divine runtime evidence failed: ${JSON.stringify(divine)}`);
 if (penelope.active.count !== 1 || penelope.active.loop !== false || penelope.active.paused || penelope.active.currentTime <= 0 || penelope.active.playResolved !== 1 || penelope.active.playRejected.length || penelope.active.sea !== 0 || penelope.active.guard !== "played" || penelope.completed.count !== 1 || !penelope.completed.paused || penelope.completed.sea !== 0 || penelope.completed.replay !== false || !penelope.restartGuardCleared) throw new Error(`Penelope runtime evidence failed: ${JSON.stringify(penelope)}`);
 if (events.consoleErrors.length || events.exceptions.length || events.failedRequests.length) throw new Error(`Unexpected browser errors: ${JSON.stringify(events)}`);
 fs.writeFileSync(path.join(evidenceDir, `optional-audio-${mobile ? "mobile" : "desktop"}.json`), `${JSON.stringify(result, null, 2)}\n`);
