@@ -1,0 +1,15 @@
+{
+  "firefox": {
+    "desktopScreenshot": "docs/qa/soundscape-local/firefox-desktop.png",
+    "mobileScreenshot": "docs/qa/soundscape-local/firefox-mobile.png"
+  },
+  "safari": {
+    "available": true,
+    "scrollWidth": 1280,
+    "mute": "Mute journey soundscape",
+    "controlWidth": 68,
+    "width": 1280,
+    "title": "Odyssey · 返鄉之旅",
+    "controlHeight": 44
+  }
+}
