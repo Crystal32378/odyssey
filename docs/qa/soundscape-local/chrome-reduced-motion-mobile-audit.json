@@ -1,0 +1,16 @@
+{
+  "consoleErrors": [],
+  "exceptions": [],
+  "failedRequests": [],
+  "before": {
+    "matches": true,
+    "label": "MUTE",
+    "width": 68,
+    "height": 44,
+    "overflow": false
+  },
+  "after": {
+    "label": "UNMUTE",
+    "pressed": "true"
+  }
+}

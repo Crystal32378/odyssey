@@ -5,6 +5,8 @@ import { spawn } from "node:child_process";
 const endpoint = process.env.CDP_ENDPOINT || "http://127.0.0.1:9222";
 const baseUrl = process.env.ODYSSEY_URL || "http://localhost:4173";
 const evidenceDir = path.resolve("docs/qa/soundscape-local");
+const mobileAudit = process.env.AUDIT_MOBILE === "1";
+const reducedMotionAudit = process.env.REDUCED_MOTION === "1";
 fs.mkdirSync(evidenceDir, { recursive: true });
 
 let localServer;
@@ -102,6 +104,7 @@ await Promise.all([
   send("Page.enable"), send("Runtime.enable"), send("Network.enable"),
   send("Fetch.enable", { patterns: [{ urlPattern: "*/api/homer*", requestStage: "Request" }] }),
 ]);
+if (reducedMotionAudit) await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
 await send("Page.addScriptToEvaluateOnNewDocument", { source: `
   (() => {
     const NativeAudio = window.Audio;
@@ -149,12 +152,26 @@ if (process.env.SKIP_TITLE !== "1") {
 }
 process.stderr.write("Title viewport evidence complete.\n");
 
-await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+await send("Emulation.setDeviceMetricsOverride", mobileAudit
+  ? { width: 390, height: 844, deviceScaleFactor: 2, mobile: true }
+  : { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
 await send("Page.navigate", { url: baseUrl });
 await delay(900);
 await evaluate(`sessionStorage.clear(); localStorage.removeItem('odyssey.soundscape.muted.v1')`);
 await send("Page.reload");
 await delay(700);
+if (reducedMotionAudit) {
+  const before = await evaluate(`(() => { const control=document.querySelector('.soundscape-control'); const rect=control.getBoundingClientRect(); return {matches:matchMedia('(prefers-reduced-motion: reduce)').matches,label:control.textContent,width:rect.width,height:rect.height,overflow:document.documentElement.scrollWidth>innerWidth}; })()`);
+  await evaluate(`document.querySelector('.soundscape-control').click()`);
+  const after = await evaluate(`({label:document.querySelector('.soundscape-control').textContent,pressed:document.querySelector('.soundscape-control').getAttribute('aria-pressed')})`);
+  await screenshot(mobileAudit ? "soundscape-reduced-motion-mobile" : "soundscape-reduced-motion-desktop");
+  const reducedResult = { consoleErrors, exceptions, failedRequests, before, after };
+  if (!before.matches || before.width < 44 || before.height < 44 || before.overflow || after.label !== "UNMUTE" || after.pressed !== "true") throw new Error(`Reduced-motion audit failed: ${JSON.stringify(reducedResult)}`);
+  fs.writeFileSync(path.join(evidenceDir, `chrome-reduced-motion-${mobileAudit ? "mobile" : "desktop"}-audit.json`), `${JSON.stringify(reducedResult, null, 2)}\n`);
+  await send("Target.closeTarget", { targetId: target.id }); socket.close(); localServer?.kill("SIGTERM");
+  console.log(JSON.stringify(reducedResult, null, 2));
+  process.exit(0);
+}
 if (await evaluate(`window.__odysseyAudio.length`) !== 0) throw new Error("Audio existed before a user gesture.");
 await evaluate(`document.querySelector('input').focus()`);
 await typeText("home");
@@ -177,7 +194,7 @@ await typeText("I continue.");
 await delay(120);
 await evaluate(`document.querySelector('.answer-shore').click()`);
 await delay(250);
-await screenshot("soundscape-voyage-desktop");
+await screenshot(mobileAudit ? "soundscape-voyage-mobile" : "soundscape-voyage-desktop");
 const sailing = await evaluate(`({layers:window.__odysseyAudio.map(a=>({src:a.src,loop:a.loop,paused:a.paused})),stage:Boolean(document.querySelector('.voyage-stage')),overflow:document.documentElement.scrollWidth>innerWidth})`);
 if (sailing.layers.length !== 2 || !sailing.layers[1].src.endsWith("/audio/wooden-ship-sailing.wav") || sailing.layers[1].loop || !sailing.stage || sailing.overflow) throw new Error(`Sailing audit failed: ${JSON.stringify(sailing)}`);
 process.stderr.write("Sailing and mute evidence complete.\n");
@@ -206,7 +223,7 @@ const result = {
   ducked,
   restored,
 };
-fs.writeFileSync(path.join(evidenceDir, "chrome-audit.json"), `${JSON.stringify(result, null, 2)}\n`);
+fs.writeFileSync(path.join(evidenceDir, mobileAudit ? "chrome-mobile-audit.json" : "chrome-audit.json"), `${JSON.stringify(result, null, 2)}\n`);
 if (consoleErrors.length || exceptions.length || failedRequests.length) throw new Error(`Browser errors found: ${JSON.stringify(result)}`);
 await send("Target.closeTarget", { targetId: target.id });
 socket.close();
