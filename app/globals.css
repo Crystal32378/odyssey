@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root { --ink: #e9dfc6; --muted: #a89f8f; --gold: #caa664; --blue: #456a76; --deep: #0d1114; --panel: #151d21; }
+.soundscape-control { position: fixed; z-index: 80; right: max(18px,2vw); bottom: max(16px,2vh); min-width: 68px; min-height: 44px; border: 1px solid rgba(202,166,100,.38); padding: 8px 11px; background: rgba(10,15,17,.72); color: rgba(233,223,198,.76); font: 600 .58rem/1 Georgia,serif; letter-spacing: .16em; backdrop-filter: blur(8px); }
+.soundscape-control:hover, .soundscape-control:focus-visible { border-color: rgba(202,166,100,.72); color: #e9dfc6; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--deep); color: var(--ink); font-family: Georgia, "Times New Roman", serif; }
 button, input, textarea { font: inherit; }

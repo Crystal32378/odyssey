@@ -34,6 +34,7 @@ import {
   type LunaSession,
 } from "../lib/luna-session";
 import { advanceCrossingGate, ARRIVAL_REVEAL_DURATION_MS, ARRIVAL_STAGE_DELAYS_MS, canBeginCrossing, createCrossingGate, crossingCanSettle, getVoyageLeg, JourneyPhase, recoverJourneyPhase, type CrossingGate, VOYAGE_CAMERA_MOBILE_START_SCALE, VOYAGE_CAMERA_START_SCALE, VOYAGE_DURATION_MS } from "../lib/voyage";
+import { soundscape } from "../lib/soundscape";
 
 type Phase = JourneyPhase;
 type AudioStatus = "idle" | "loading" | "ready" | "playing" | "error";
@@ -167,6 +168,14 @@ export default function Home() {
   // A changed scene invalidates the browser audio resource and its playback state.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); audioRef.current = null; audioUrlRef.current = null; setAudioStatus("idle"); }, [scene?.narrative]);
+  useEffect(() => {
+    if (phase === "map") return;
+    const resume = () => soundscape?.enterJourney();
+    window.addEventListener("pointerdown", resume, { once: true, capture: true });
+    window.addEventListener("keydown", resume, { once: true, capture: true });
+    return () => { window.removeEventListener("pointerdown", resume, true); window.removeEventListener("keydown", resume, true); };
+  }, [phase]);
+  useEffect(() => { if (phase !== "voyaging") soundscape?.stopSailing(); }, [phase]);
   function describeError(error: unknown) { const e = error as Error & { requestId?: string }; return { message: e.message || "The sea has not answered.", requestId: e.requestId || "" }; }
   function recordError(error: unknown) { const details = describeError(error); setErrorMessage(details.message); setRequestId(details.requestId); }
   function updateVoyage(next: VoyageState | null) { voyageRef.current = next; setVoyage(next); }
@@ -175,6 +184,7 @@ export default function Home() {
 
   function settleCrossing(crossing: VoyageState) {
     if (!crossingCanSettle(crossing.gate)) return;
+    soundscape?.stopSailing();
     updateVoyage(null); crossingBusyRef.current = false; setPhase(crossing.ending ? "ending" : "island");
     if (crossing.divineTrigger && crossing.resolvedMemory && !crossing.ending) {
       const current = divineSessionRef.current || createDivineSession();
@@ -183,7 +193,7 @@ export default function Home() {
     }
   }
 
-  async function beginJourney() { const homeGoal = goal.trim(); if (!homeGoal) return; setCompletedLunaPresentation(null); setErrorMessage(""); setPhase("loading"); const initial = createJourneyMemory(homeGoal); setMemory(initial); let nextDivine: DivineSession; try { nextDivine = resetDivineSession(sessionStorage); } catch { nextDivine = createDivineSession(); } updateDivineSession(nextDivine); try { updateLunaSession(resetLunaSession(sessionStorage, nextDivine.journeyId)); } catch { updateLunaSession(createLunaSession(nextDivine.journeyId)); } try { setScene(await requestHomer<HomerScene>({ phase: "enter", islandIndex: 0, homeGoal, timeline: [] })); setPhase("island"); } catch (e) { setPhase("map"); recordError(e); } }
+  async function beginJourney() { const homeGoal = goal.trim(); if (!homeGoal) return; soundscape?.enterJourney(); setCompletedLunaPresentation(null); setErrorMessage(""); setPhase("loading"); const initial = createJourneyMemory(homeGoal); setMemory(initial); let nextDivine: DivineSession; try { nextDivine = resetDivineSession(sessionStorage); } catch { nextDivine = createDivineSession(); } updateDivineSession(nextDivine); try { updateLunaSession(resetLunaSession(sessionStorage, nextDivine.journeyId)); } catch { updateLunaSession(createLunaSession(nextDivine.journeyId)); } try { setScene(await requestHomer<HomerScene>({ phase: "enter", islandIndex: 0, homeGoal, timeline: [] })); setPhase("island"); } catch (e) { soundscape?.leaveJourney(); setPhase("map"); recordError(e); } }
   function resolveAnswer() {
     const playerInput = answer.trim();
     if (!playerInput || !memory || crossingBusyRef.current || !canBeginCrossing(phase, Boolean(voyageRef.current))) return;
@@ -198,6 +208,7 @@ export default function Home() {
       requestId: "",
     };
     crossingBusyRef.current = true; setErrorMessage(""); setRequestId(""); updateVoyage(crossing); setPhase("voyaging");
+    if (!reducedMotion) soundscape?.startSailing();
     void performResolve(crossing.id, memory, playerInput);
   }
 
@@ -216,12 +227,13 @@ export default function Home() {
       const current = voyageRef.current; if (!current || current.id !== crossingId) return;
       const details = describeError(error);
       const next = { ...current, gate: advanceCrossingGate(current.gate, { type: "api-failed" }), errorMessage: details.message, requestId: details.requestId };
-      crossingBusyRef.current = false; setErrorMessage(details.message); setRequestId(details.requestId); updateVoyage(next);
+      soundscape?.stopSailing(); crossingBusyRef.current = false; setErrorMessage(details.message); setRequestId(details.requestId); updateVoyage(next);
     }
   }
 
   function finishVoyageVisual() {
     const current = voyageRef.current; if (!current) return;
+    soundscape?.stopSailing();
     const next = { ...current, gate: advanceCrossingGate(current.gate, { type: "visual-complete" }) };
     updateVoyage(next); settleCrossing(next);
   }
@@ -243,7 +255,7 @@ export default function Home() {
       setCard(nextCard); setEndingStage("idle"); setPhase("ending");
     } catch (e) { setEndingStage("idle"); setPhase("ending"); recordError(e); }
   }
-  async function hearHomer() { if (!scene || audioStatus === "loading") return; if (audioStatus === "playing" && audioRef.current) { audioRef.current.pause(); setAudioStatus("ready"); return; } if (audioStatus === "ready" && audioRef.current) { try { await audioRef.current.play(); setAudioStatus("playing"); } catch { setAudioStatus("error"); } return; } setAudioStatus("loading"); try { const response = await fetch("/api/homer/audio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: `${scene.narrative} ${scene.question}` }) }); if (!response.ok) throw new Error(); const url = URL.createObjectURL(await response.blob()); audioUrlRef.current = url; const audio = new Audio(url); audioRef.current = audio; audio.onended = () => setAudioStatus("ready"); audio.onerror = () => setAudioStatus("error"); await audio.play(); setAudioStatus("playing"); } catch { setAudioStatus("error"); } }
+  async function hearHomer() { if (!scene || audioStatus === "loading") return; soundscape?.enterJourney(); if (audioStatus === "playing" && audioRef.current) { audioRef.current.pause(); soundscape?.setVoiceActive(false); setAudioStatus("ready"); return; } if (audioStatus === "ready" && audioRef.current) { try { await audioRef.current.play(); soundscape?.setVoiceActive(true); setAudioStatus("playing"); } catch { soundscape?.setVoiceActive(false); setAudioStatus("error"); } return; } setAudioStatus("loading"); try { const response = await fetch("/api/homer/audio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: `${scene.narrative} ${scene.question}` }) }); if (!response.ok) throw new Error(); const url = URL.createObjectURL(await response.blob()); audioUrlRef.current = url; const audio = new Audio(url); audioRef.current = audio; audio.onplay = () => soundscape?.setVoiceActive(true); audio.onpause = () => soundscape?.setVoiceActive(false); audio.onended = () => { soundscape?.setVoiceActive(false); setAudioStatus("ready"); }; audio.onerror = () => { soundscape?.setVoiceActive(false); setAudioStatus("error"); }; await audio.play(); soundscape?.setVoiceActive(true); setAudioStatus("playing"); } catch { soundscape?.setVoiceActive(false); setAudioStatus("error"); } }
   function dismissDivinePresence() {
     const current = divineSessionRef.current;
     if (!current) return;
@@ -251,7 +263,7 @@ export default function Home() {
   }
   function openLunaThreshold() { if (!memory || !lunaSessionRef.current) return; updateLunaSession(queueLunaEncounter(lunaSessionRef.current, memory)); }
   function continueLunaThreshold() { if (lunaTriggerId && lunaActive) setCompletedLunaPresentation(lunaTriggerId); }
-  function resetJourney() { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); sessionStorage.removeItem(SESSION_KEY); clearDivineSession(sessionStorage); divineRequestRef.current = null; updateDivineSession(null); clearLunaSession(sessionStorage); lunaRequestRef.current = null; updateLunaSession(null); setCompletedLunaPresentation(null); crossingBusyRef.current = false; updateVoyage(null); setGoal(""); setPhase("map"); setMemory(null); setScene(null); setAnswer(""); setResolution(""); setSummary(null); setCard(null); setEndingStage("idle"); setErrorMessage(""); setRequestId(""); }
+  function resetJourney() { audioRef.current?.pause(); soundscape?.leaveJourney(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); sessionStorage.removeItem(SESSION_KEY); clearDivineSession(sessionStorage); divineRequestRef.current = null; updateDivineSession(null); clearLunaSession(sessionStorage); lunaRequestRef.current = null; updateLunaSession(null); setCompletedLunaPresentation(null); crossingBusyRef.current = false; updateVoyage(null); setGoal(""); setPhase("map"); setMemory(null); setScene(null); setAnswer(""); setResolution(""); setSummary(null); setCard(null); setEndingStage("idle"); setErrorMessage(""); setRequestId(""); }
 
   if (phase === "map") return <Map goal={goal} setGoal={setGoal} begin={beginJourney} error={errorMessage} />;
   if (!memory || !scene || phase === "loading") return <main className="journey voyage-loading"><p className="eyebrow">THE FIRST SHORE</p><h1>The map remembers your name.</h1><p>Homer gathers the words of your return.</p></main>;
