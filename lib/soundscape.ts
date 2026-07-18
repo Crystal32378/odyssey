@@ -9,7 +9,7 @@ export const SAILING_DURATION_MS = 4_000;
 export const AMBIENCE_VOLUME = 0.095;
 export const DUCKED_VOLUME = 0.015;
 export const SHIP_VOLUME = 0.075;
-export const DIVINE_BIRD_VOLUME = 0.1;
+export const DIVINE_BIRD_VOLUME = 0.22;
 export const PENELOPE_LOOM_VOLUME = 0.14;
 export const PENELOPE_AMBIENCE_VOLUME = 0.07;
 export const SOUNDSCAPE_FADE_MS = 280;
@@ -149,9 +149,9 @@ export class SoundscapeController {
     if (this.divineBird) this.divineBird.currentTime = 0;
   }
 
-  playPenelopeLoom() {
+  async playPenelopeLoom(): Promise<boolean> {
     this.stopPenelopeLoom();
-    if (!this.active || this.muted) return;
+    if (!this.active || this.muted) return false;
     const loom = this.penelopeLoom || this.makeLayer(PENELOPE_LOOM_SOURCE, false, PENELOPE_LOOM_VOLUME);
     this.penelopeLoom = loom;
     loom.onended = () => this.stopPenelopeLoom();
@@ -159,7 +159,13 @@ export class SoundscapeController {
     loom.muted = false;
     this.loomActive = true;
     this.fadeAmbience(PENELOPE_AMBIENCE_VOLUME);
-    void loom.play().catch(() => this.stopPenelopeLoom());
+    try {
+      await loom.play();
+      return true;
+    } catch {
+      this.stopPenelopeLoom();
+      return false;
+    }
   }
 
   stopPenelopeLoom() {

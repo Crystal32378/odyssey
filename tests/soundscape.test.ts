@@ -131,6 +131,7 @@ test("Divine accent is sparse, non-looping, non-stacking, muted, and fail-open",
   const bird = layers.get(DIVINE_BIRD_SOURCE)!;
   assert.equal(bird.loop, false);
   assert.equal(bird.volume, DIVINE_BIRD_VOLUME);
+  assert.equal(DIVINE_BIRD_VOLUME, 0.22, "the proven-playing accent remains restrained but perceptible");
   controller.playDivineAccent();
   assert.equal(layers.size, 2, "one ambience and one bird instance are reused");
   assert.ok(bird.pauseCount >= 1);
@@ -144,20 +145,38 @@ test("Penelope loom is non-looping, non-stacking, muted, and restores the sea", 
   controller.enterJourney();
   await settleFade();
   const sea = layers.get(SEA_AMBIENCE_SOURCE)!;
-  controller.playPenelopeLoom();
+  assert.equal(await controller.playPenelopeLoom(), true);
   await settleFade();
   const loom = layers.get(PENELOPE_LOOM_SOURCE)!;
   assert.equal(loom.loop, false);
   assert.equal(loom.volume, PENELOPE_LOOM_VOLUME);
   assert.equal(sea.volume, PENELOPE_AMBIENCE_VOLUME);
-  controller.playPenelopeLoom();
+  assert.equal(await controller.playPenelopeLoom(), true);
   assert.equal(layers.size, 2);
   assert.ok(loom.pauseCount >= 1);
   loom.onended?.();
-  await settleFade();
+  await new Promise((resolve) => setTimeout(resolve, 400));
   assert.equal(sea.volume, AMBIENCE_VOLUME);
   controller.toggleMute();
   assert.ok(loom.pauseCount >= 3);
+});
+
+test("Penelope loom reports whether playback legitimately started", async () => {
+  const muted = setup(true);
+  muted.controller.enterJourney();
+  assert.equal(await muted.controller.playPenelopeLoom(), false);
+  assert.equal(muted.layers.has(PENELOPE_LOOM_SOURCE), false);
+
+  const blockedLayers: MockAudio[] = [];
+  const blocked = new SoundscapeController(() => {
+    const layer = new MockAudio();
+    layer.rejectPlayback = true;
+    blockedLayers.push(layer);
+    return layer;
+  });
+  blocked.enterJourney();
+  assert.equal(await blocked.playPenelopeLoom(), false);
+  assert.ok(blockedLayers.at(-1)!.pauseCount >= 1);
 });
 
 test("blocked and failed assets fail open without changing product state", async () => {

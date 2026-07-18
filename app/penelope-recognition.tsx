@@ -19,10 +19,12 @@ export function PenelopeRecognition() {
     }
     try {
       if (sessionStorage.getItem(PENELOPE_LOOM_SESSION_KEY) === "played") return;
-      sessionStorage.setItem(PENELOPE_LOOM_SESSION_KEY, "played");
     } catch { /* Session recovery remains visual and complete without audio storage. */ }
     ownsLoom.current = true;
-    soundscape?.playPenelopeLoom();
+    void soundscape?.playPenelopeLoom().then((played) => {
+      if (!played) return;
+      try { sessionStorage.setItem(PENELOPE_LOOM_SESSION_KEY, "played"); } catch { /* Audio remains optional without storage. */ }
+    });
     return scheduleStop;
   }, []);
 

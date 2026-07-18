@@ -1,0 +1,70 @@
+{
+  "commit": "runtime-fix",
+  "url": "http://localhost:4173",
+  "viewport": "mobile",
+  "globalAudio": {
+    "persistedMute": null,
+    "snapshot": {
+      "muted": false,
+      "active": true,
+      "voiceActive": false,
+      "sailing": false
+    },
+    "sea": {
+      "paused": false,
+      "ended": false,
+      "muted": false,
+      "volume": 0.095,
+      "currentTime": 1.197927,
+      "playCalls": 1,
+      "playResolved": 1,
+      "playRejected": []
+    }
+  },
+  "divine": {
+    "before": {
+      "count": 1,
+      "loop": false,
+      "paused": false,
+      "muted": false,
+      "volume": 0.22,
+      "currentTime": 0.362824,
+      "playCalls": 1,
+      "playResolved": 1,
+      "playRejected": []
+    },
+    "after": {
+      "continued": 1,
+      "paused": true,
+      "count": 1
+    }
+  },
+  "penelope": {
+    "active": {
+      "count": 1,
+      "loop": false,
+      "paused": false,
+      "muted": false,
+      "volume": 0.14,
+      "currentTime": 0.379308,
+      "playCalls": 1,
+      "playResolved": 1,
+      "playRejected": [],
+      "sea": 0.07,
+      "guard": "played"
+    },
+    "remount": {
+      "count": 1,
+      "paused": true
+    },
+    "restartGuardCleared": true
+  },
+  "calypso": {
+    "loomLayersWithoutPenelope": 0
+  },
+  "events": {
+    "consoleErrors": [],
+    "exceptions": [],
+    "failedRequests": []
+  }
+}
