@@ -6,9 +6,9 @@ export const PENELOPE_LOOM_SOURCE = "/audio/penelope-loom.wav";
 export const PENELOPE_LOOM_SESSION_KEY = "odyssey.penelope.loom-played.v1";
 export const SAILING_DURATION_MS = 4_000;
 
-export const AMBIENCE_VOLUME = 0.095;
+export const AMBIENCE_VOLUME = 0.082;
 export const DUCKED_VOLUME = 0.015;
-export const SHIP_VOLUME = 0.075;
+export const SHIP_VOLUME = 0.065;
 export const DIVINE_BIRD_VOLUME = 0.22;
 export const PENELOPE_LOOM_VOLUME = 0.14;
 export const PENELOPE_AMBIENCE_VOLUME = 0.07;
@@ -46,6 +46,7 @@ export class SoundscapeController {
   private divineBird: AudioLayer | null = null;
   private penelopeLoom: AudioLayer | null = null;
   private loomActive = false;
+  private ithacaReturn = false;
   private active = false;
   private muted = false;
   private voiceActive = false;
@@ -76,6 +77,7 @@ export class SoundscapeController {
 
   leaveJourney() {
     this.active = false;
+    this.ithacaReturn = false;
     this.voiceActive = false;
     this.stopSailing();
     this.stopDivineAccent();
@@ -95,7 +97,7 @@ export class SoundscapeController {
       this.stopSailing();
       this.stopDivineAccent();
       this.stopPenelopeLoom();
-    } else if (this.active) {
+    } else if (this.active && !this.ithacaReturn) {
       if (this.ambience) this.ambience.muted = false;
       this.startAmbience(true);
     }
@@ -158,7 +160,7 @@ export class SoundscapeController {
     loom.currentTime = 0;
     loom.muted = false;
     this.loomActive = true;
-    this.fadeAmbience(PENELOPE_AMBIENCE_VOLUME);
+    this.fadeAmbience(this.ithacaReturn ? 0 : PENELOPE_AMBIENCE_VOLUME);
     try {
       await loom.play();
       return true;
@@ -168,12 +170,22 @@ export class SoundscapeController {
     }
   }
 
+  async beginIthacaReturn(): Promise<boolean> {
+    if (this.ithacaReturn) return false;
+    this.ithacaReturn = true;
+    this.stopSailing();
+    this.stopDivineAccent();
+    this.stopFade();
+    if (this.ambience) this.fadeAmbience(0);
+    return this.playPenelopeLoom();
+  }
+
   stopPenelopeLoom() {
     this.penelopeLoom?.pause();
     if (this.penelopeLoom) this.penelopeLoom.currentTime = 0;
     const wasActive = this.loomActive;
     this.loomActive = false;
-    if (wasActive && this.active && !this.muted) this.fadeAmbience(this.voiceActive ? DUCKED_VOLUME : AMBIENCE_VOLUME);
+    if (wasActive && this.active && !this.muted && !this.ithacaReturn) this.fadeAmbience(this.voiceActive ? DUCKED_VOLUME : AMBIENCE_VOLUME);
   }
 
   private startAmbience(fadeIn = true) {

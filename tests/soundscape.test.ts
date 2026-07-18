@@ -116,8 +116,8 @@ test("sailing texture is one non-looping four-second layer and rapid replay cann
 });
 
 test("the accepted corrective mix keeps voice first and uses a smooth short fade", () => {
-  assert.equal(AMBIENCE_VOLUME, 0.095);
-  assert.equal(SHIP_VOLUME, 0.075);
+  assert.equal(AMBIENCE_VOLUME, 0.082);
+  assert.equal(SHIP_VOLUME, 0.065);
   assert.equal(DUCKED_VOLUME, 0.015);
   assert.equal(SOUNDSCAPE_FADE_MS, 280);
   assert.ok(DUCKED_VOLUME < AMBIENCE_VOLUME * 0.2);
@@ -161,6 +161,29 @@ test("Penelope loom is non-looping, non-stacking, muted, and restores the sea", 
   assert.ok(loom.pauseCount >= 3);
 });
 
+test("Ithaca reveal silences the sea, plays one loom passage, and leaves a full stop", async () => {
+  const { controller, layers } = setup();
+  controller.enterJourney();
+  await settleFade();
+  assert.equal(await controller.beginIthacaReturn(), true);
+  await settleFade();
+  const sea = layers.get(SEA_AMBIENCE_SOURCE)!;
+  const loom = layers.get(PENELOPE_LOOM_SOURCE)!;
+  assert.equal(sea.volume, 0);
+  assert.equal(loom.playCount, 1);
+  assert.equal(await controller.beginIthacaReturn(), false, "the same return cannot replay the loom");
+  loom.onended?.();
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  assert.equal(sea.volume, 0, "completed Ithaca remains silent after the loom ends");
+  controller.toggleMute();
+  controller.toggleMute();
+  assert.equal(sea.playCount, 1, "unmuting the completed return cannot restart the sea");
+  controller.leaveJourney();
+  controller.enterJourney();
+  await settleFade();
+  assert.equal(sea.volume, AMBIENCE_VOLUME, "a genuinely new journey may restore the sea");
+});
+
 test("Penelope loom reports whether playback legitimately started", async () => {
   const muted = setup(true);
   muted.controller.enterJourney();
@@ -196,6 +219,8 @@ test("wiring keeps Soundscape outside Journey authority and preserves labelled a
   const controller = readFileSync(new URL("../lib/soundscape.ts", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(page, /if \(!reducedMotion\) soundscape\?\.startSailing\(\)/);
+  assert.match(page, /window\.addEventListener\("pointerdown", onPointer, true\)/);
+  assert.match(page, /soundscape\?\.beginIthacaReturn\(\)/);
   assert.match(page, /soundscape\?\.setVoiceActive\(true\)/);
   assert.match(page, /soundscape\?\.leaveJourney\(\)/);
   assert.doesNotMatch(controller, /from ["']\.\/journey|setMemory|setPhase|resolveIsland|generateEnding/);

@@ -169,12 +169,22 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); audioRef.current = null; audioUrlRef.current = null; setAudioStatus("idle"); }, [scene?.narrative]);
   useEffect(() => {
-    if (phase === "map") return;
-    const resume = () => soundscape?.enterJourney();
-    window.addEventListener("pointerdown", resume, { once: true, capture: true });
-    window.addEventListener("keydown", resume, { once: true, capture: true });
-    return () => { window.removeEventListener("pointerdown", resume, true); window.removeEventListener("keydown", resume, true); };
-  }, [phase]);
+    if (!hydrated) return;
+    if (memory?.ending === "ithaca" && card) return;
+    const unlock = () => {
+      soundscape?.enterJourney();
+      window.removeEventListener("pointerdown", onPointer, true);
+      window.removeEventListener("keydown", onKey, true);
+    };
+    const onPointer = () => unlock();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey || ["Tab", "Shift", "Control", "Alt", "Meta", "Escape"].includes(event.key)) return;
+      unlock();
+    };
+    window.addEventListener("pointerdown", onPointer, true);
+    window.addEventListener("keydown", onKey, true);
+    return () => { window.removeEventListener("pointerdown", onPointer, true); window.removeEventListener("keydown", onKey, true); };
+  }, [card, hydrated, memory?.ending, phase]);
   useEffect(() => { if (phase !== "voyaging") soundscape?.stopSailing(); }, [phase]);
   function describeError(error: unknown) { const e = error as Error & { requestId?: string }; return { message: e.message || "The sea has not answered.", requestId: e.requestId || "" }; }
   function recordError(error: unknown) { const details = describeError(error); setErrorMessage(details.message); setRequestId(details.requestId); }
@@ -247,6 +257,16 @@ export default function Home() {
   }
   async function generateEnding() {
     if (!memory || phase === "generating_end") return;
+    if (memory.ending === "ithaca") {
+      let alreadyPlayed = false;
+      try { alreadyPlayed = sessionStorage.getItem(PENELOPE_LOOM_SESSION_KEY) === "played"; } catch { /* The return remains complete without storage. */ }
+      if (!alreadyPlayed) {
+        void soundscape?.beginIthacaReturn().then((played) => {
+          if (!played) return;
+          try { sessionStorage.setItem(PENELOPE_LOOM_SESSION_KEY, "played"); } catch { /* Audio remains optional without storage. */ }
+        });
+      }
+    }
     setErrorMessage(""); setRequestId(""); setEndingStage(summary ? "sealing" : "summarizing"); setPhase("generating_end");
     try {
       const nextSummary = summary || await requestHomer<JourneySummary>({ phase: "summary", memory }, { timeoutMs: ENDING_REQUEST_TIMEOUT_MS });

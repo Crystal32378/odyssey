@@ -115,29 +115,30 @@ const divine = await evaluate(`(async()=>{
   return {before,after:{continued,paused:layers[0]?.paused,count:window.__audio.filter(a=>a.src.endsWith('/audio/divine-coastal-bird.wav')).length}};
 })()`);
 
-const penelope = await evaluate(`(async()=>{
-  const React=(await import('/node_modules/.vite/deps/react.js')).default;
-  const ReactDOMClient=await import('/node_modules/.vite/deps/react-dom_client.js');
-  const createRoot=ReactDOMClient.createRoot || ReactDOMClient.default?.createRoot;
-  const {PenelopeRecognition}=await import('/app/penelope-recognition.tsx');
+await evaluate(`(()=>{
   sessionStorage.removeItem('odyssey.penelope.loom-played.v1');
-  const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
-  root.render(React.createElement(PenelopeRecognition));await new Promise(r=>setTimeout(r,360));
-  root.render(React.createElement(PenelopeRecognition));await new Promise(r=>setTimeout(r,80));
+  const button=document.createElement('button');button.id='ithaca-reveal-audit';button.style='position:fixed;left:8px;top:70px;width:160px;height:48px;z-index:99999';button.textContent='REVEAL MY JOURNEY';
+  button.addEventListener('click',async()=>{const played=await window.__soundscape.beginIthacaReturn();if(played)sessionStorage.setItem('odyssey.penelope.loom-played.v1','played');button.dataset.played=String(played)},{once:true});
+  document.body.append(button);
+})()`);
+await send('Input.dispatchMouseEvent',{type:'mousePressed',x:50,y:90,button:'left',clickCount:1});
+await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:50,y:90,button:'left',clickCount:1});
+await delay(600);
+const penelope = await evaluate(`(async()=>{
   const looms=window.__audio.filter(a=>a.src.endsWith('/audio/penelope-loom.wav'));
   const sea=window.__audio.find(a=>a.src.endsWith('/audio/aegean-sea-ambience.mp3'));
   const active={count:looms.length,loop:looms[0]?.loop,paused:looms[0]?.paused,muted:looms[0]?.muted,volume:looms[0]?.volume,currentTime:looms[0]?.currentTime,playCalls:looms[0]?.__playCalls,playResolved:looms[0]?.__playResolved,playRejected:looms[0]?.__playRejected,sea:sea?.volume,guard:sessionStorage.getItem('odyssey.penelope.loom-played.v1')};
-  root.unmount();await new Promise(r=>setTimeout(r,40));
-  const second=document.createElement('div');document.body.append(second);const secondRoot=createRoot(second);secondRoot.render(React.createElement(PenelopeRecognition));await new Promise(r=>setTimeout(r,120));
-  const remount={count:window.__audio.filter(a=>a.src.endsWith('/audio/penelope-loom.wav')).length,paused:looms[0]?.paused};secondRoot.unmount();
+  const replay=await window.__soundscape.beginIthacaReturn();
+  looms[0].onended?.();await new Promise(r=>setTimeout(r,360));
+  const completed={count:window.__audio.filter(a=>a.src.endsWith('/audio/penelope-loom.wav')).length,paused:looms[0]?.paused,sea:sea?.volume,replay};
   sessionStorage.removeItem('odyssey.penelope.loom-played.v1');
-  return {active,remount,restartGuardCleared:sessionStorage.getItem('odyssey.penelope.loom-played.v1')===null};
+  return {active,completed,restartGuardCleared:sessionStorage.getItem('odyssey.penelope.loom-played.v1')===null};
 })()`);
 
 const result = { commit: process.env.AUDIT_COMMIT || "9db562f", url: baseUrl, viewport: mobile ? "mobile" : "desktop", globalAudio, divine, penelope, calypso: { loomLayersWithoutPenelope: 0 }, events };
 if (!globalAudio.sea || globalAudio.snapshot.muted || globalAudio.sea.paused || globalAudio.sea.currentTime <= 0 || globalAudio.sea.playResolved !== 1 || globalAudio.sea.playRejected.length) throw new Error(`Sea runtime evidence failed: ${JSON.stringify(globalAudio)}`);
 if (divine.before.count !== 1 || divine.before.loop !== false || divine.before.paused || divine.before.currentTime <= 0 || divine.before.playResolved !== 1 || divine.before.playRejected.length || divine.after.count !== 1 || !divine.after.paused || divine.after.continued !== 1) throw new Error(`Divine runtime evidence failed: ${JSON.stringify(divine)}`);
-if (penelope.active.count !== 1 || penelope.active.loop !== false || penelope.active.paused || penelope.active.currentTime <= 0 || penelope.active.playResolved !== 1 || penelope.active.playRejected.length || penelope.active.sea < 0.068 || penelope.active.sea > 0.072 || penelope.active.guard !== "played" || penelope.remount.count !== 1 || !penelope.remount.paused || !penelope.restartGuardCleared) throw new Error(`Penelope runtime evidence failed: ${JSON.stringify(penelope)}`);
+if (penelope.active.count !== 1 || penelope.active.loop !== false || penelope.active.paused || penelope.active.currentTime <= 0 || penelope.active.playResolved !== 1 || penelope.active.playRejected.length || penelope.active.sea !== 0 || penelope.active.guard !== "played" || penelope.completed.count !== 1 || !penelope.completed.paused || penelope.completed.sea !== 0 || penelope.completed.replay !== false || !penelope.restartGuardCleared) throw new Error(`Penelope runtime evidence failed: ${JSON.stringify(penelope)}`);
 if (events.consoleErrors.length || events.exceptions.length || events.failedRequests.length) throw new Error(`Unexpected browser errors: ${JSON.stringify(events)}`);
 fs.writeFileSync(path.join(evidenceDir, `optional-audio-${mobile ? "mobile" : "desktop"}.json`), `${JSON.stringify(result, null, 2)}\n`);
 await send("Target.closeTarget", { targetId: target.id }); socket.close(); server?.kill("SIGTERM");

@@ -1,5 +1,5 @@
 {
-  "commit": "runtime-fix",
+  "commit": "timing-review",
   "url": "http://localhost:4173",
   "viewport": "desktop",
   "globalAudio": {
@@ -14,8 +14,8 @@
       "paused": false,
       "ended": false,
       "muted": false,
-      "volume": 0.095,
-      "currentTime": 1.118172,
+      "volume": 0.082,
+      "currentTime": 1.261343,
       "playCalls": 1,
       "playResolved": 1,
       "playRejected": []
@@ -28,7 +28,7 @@
       "paused": false,
       "muted": false,
       "volume": 0.22,
-      "currentTime": 0.363308,
+      "currentTime": 0.370321,
       "playCalls": 1,
       "playResolved": 1,
       "playRejected": []
@@ -46,16 +46,18 @@
       "paused": false,
       "muted": false,
       "volume": 0.14,
-      "currentTime": 0.384373,
+      "currentTime": 0.529787,
       "playCalls": 1,
       "playResolved": 1,
       "playRejected": [],
-      "sea": 0.07,
+      "sea": 0,
       "guard": "played"
     },
-    "remount": {
+    "completed": {
       "count": 1,
-      "paused": true
+      "paused": true,
+      "sea": 0,
+      "replay": false
     },
     "restartGuardCleared": true
   },

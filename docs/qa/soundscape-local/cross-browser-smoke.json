@@ -4,12 +4,7 @@
     "mobileScreenshot": "docs/qa/soundscape-local/firefox-mobile.png"
   },
   "safari": {
-    "available": true,
-    "scrollWidth": 1280,
-    "mute": "Mute journey soundscape",
-    "controlWidth": 68,
-    "width": 1280,
-    "title": "Odyssey · 返鄉之旅",
-    "controlHeight": 44
+    "available": false,
+    "reason": "Safari WebDriver: {\"value\":{\"error\":\"session not created\",\"message\":\"Could not create a session: You must enable 'Allow remote automation' in the Developer section of Safari Settings to control Safari via WebDriver.\",\"stacktrace\":\"\"}}"
   }
 }

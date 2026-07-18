@@ -94,3 +94,11 @@ test("a settled Divine Presence owns one fail-open coastal accent for its mounte
   assert.match(source, /soundscape\?\.stopDivineAccent\(\); onContinue\(\)/);
   assert.doesNotMatch(source, /new Audio|<audio/);
 });
+
+test("the shared one-shot accent is eligible for all six canonical Divine encounters", () => {
+  const divine = readFileSync(new URL("../lib/divine.ts", import.meta.url), "utf8");
+  for (const actor of ["poseidon", "athena", "hermes", "helios", "ino", "zeus"]) {
+    assert.match(divine, new RegExp(`actorId: "${actor}"`));
+  }
+  assert.match(source, /if \(!terminalEncounter\) return;[\s\S]*soundscape\?\.playDivineAccent\(\)/);
+});

@@ -78,10 +78,10 @@ writeWave(
 writeWave(
   path.join(root, "public", "audio", "penelope-loom.wav"),
   readPcm16Wave(path.join(sourceDir, "510266__naima__navette-de-metier-a-tisser.wav")),
-  { startSeconds: 2, durationSeconds: 4.2, gain: 0.6, fadeSeconds: 0.25 },
+  { startSeconds: 2, durationSeconds: 8, gain: 0.6, fadeSeconds: 0.35 },
 );
 
 console.log("Prepared work/soundscape/ship-sailing-master.wav (8–12s excerpt, -12.04 dB gain, 350ms linear fades).");
 console.log("Prepared public/audio/divine-coastal-bird.wav (31.7–33.2s excerpt, -21.94 dB gain, 180ms linear fades).");
-console.log("Prepared public/audio/penelope-loom.wav (2.0–6.2s excerpt, -4.44 dB gain, 250ms linear fades).");
+console.log("Prepared public/audio/penelope-loom.wav (2.0–10.0s excerpt, -4.44 dB gain, 350ms linear fades).");
 console.log("Encode commands are documented in docs/audio-assets.md so CoreAudio output remains reproducible.");

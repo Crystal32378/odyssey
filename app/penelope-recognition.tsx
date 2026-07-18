@@ -1,33 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { PENELOPE_LOOM_SESSION_KEY, soundscape } from "../lib/soundscape";
+import { useState } from "react";
 
 const PENELOPE_IMAGE = "/characters/v1/penelope.webp";
 
 export function PenelopeRecognition() {
   const [imageFailed, setImageFailed] = useState(false);
-  const ownsLoom = useRef(false);
-  const stopLoomTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const scheduleStop = () => { stopLoomTimer.current = setTimeout(() => soundscape?.stopPenelopeLoom(), 0); };
-    if (ownsLoom.current) {
-      if (stopLoomTimer.current) clearTimeout(stopLoomTimer.current);
-      stopLoomTimer.current = null;
-      return scheduleStop;
-    }
-    try {
-      if (sessionStorage.getItem(PENELOPE_LOOM_SESSION_KEY) === "played") return;
-    } catch { /* Session recovery remains visual and complete without audio storage. */ }
-    ownsLoom.current = true;
-    void soundscape?.playPenelopeLoom().then((played) => {
-      if (!played) return;
-      try { sessionStorage.setItem(PENELOPE_LOOM_SESSION_KEY, "played"); } catch { /* Audio remains optional without storage. */ }
-    });
-    return scheduleStop;
-  }, []);
-
   return (
     <section
       className={`penelope-recognition${imageFailed ? " penelope-image-failed" : ""}`}

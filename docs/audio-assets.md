@@ -74,9 +74,9 @@ Frozen record date: **2026-07-18**. These files support an optional authored Sou
 - Original SHA-256: `9e0386371b70aecd63c786333bf3572d001bdc1b708eb602544a1534fb869ef3`.
 - Original size/format: 10,241,008 bytes; 58.051429 seconds; stereo PCM WAV; 44.1 kHz; 16-bit.
 - Runtime derivative: `public/audio/penelope-loom.wav`.
-- Derivative SHA-256: `5fba2f7e7585efdbcb73e68b60896f156f0418104f8a93d403ea8e9deb28ef33`.
-- Derivative: 740,924 bytes; 4.200000 seconds; stereo PCM WAV; 44.1 kHz; 16-bit.
-- Processing: selected source seconds 2.000–6.200, containing two principal shuttle movements and a restrained frame response; linear gain `0.6` (`-4.44 dB`); 250 ms linear fade-in and fade-out; no EQ, compression, denoising, channel, resampling, pitch, time, reverb, or synthetic processing.
+- Derivative SHA-256: `ceba6ce3c8a32f6f43f36b144981568a41313ad7bfa1b06ee54b2be1f9f08d8a`.
+- Derivative: 1,411,244 bytes; 8.000000 seconds; stereo PCM WAV; 44.1 kHz; 16-bit.
+- Processing: selected source seconds 2.000–10.000 as one continuous, non-looping shuttle-and-frame passage; linear gain `0.6` (`-4.44 dB`); 350 ms linear fade-in and fade-out; no EQ, compression, denoising, channel, resampling, pitch, time, reverb, or synthetic processing.
 
 ## Evidence and runtime boundary
 
