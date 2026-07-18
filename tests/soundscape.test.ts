@@ -2,11 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import {
+  AMBIENCE_VOLUME,
+  DUCKED_VOLUME,
   SAILING_DURATION_MS,
   SEA_AMBIENCE_SOURCE,
   SAILING_SOURCE,
   SOUNDSCAPE_PREFERENCE_KEY,
   SoundscapeController,
+  SHIP_VOLUME,
+  SOUNDSCAPE_FADE_MS,
 } from "../lib/soundscape.ts";
 
 class MockAudio {
@@ -47,7 +51,7 @@ test("initial load is silent and the first journey gesture starts one restrained
   assert.equal(sea.playCount, 1);
   assert.equal(sea.loop, true);
   assert.equal(sea.preload, "none");
-  assert.ok(sea.volume > 0 && sea.volume < 0.2);
+  assert.equal(sea.volume, AMBIENCE_VOLUME);
   controller.enterJourney();
   assert.equal(layers.size, 1, "repeated gestures reuse the ambience instance");
 });
@@ -78,6 +82,7 @@ test("Homer voice ducking restores after pause, completion, interruption, or fai
   controller.setVoiceActive(true);
   await settleFade();
   assert.ok(sea.volume < full);
+  assert.equal(sea.volume, DUCKED_VOLUME);
   controller.setVoiceActive(false);
   await settleFade();
   assert.equal(sea.volume, full);
@@ -93,6 +98,7 @@ test("sailing texture is one non-looping four-second layer and rapid replay cann
   controller.startSailing();
   const ship = layers.get(SAILING_SOURCE)!;
   assert.equal(ship.loop, false);
+  assert.equal(ship.volume, SHIP_VOLUME);
   assert.equal(controller.snapshot().sailing, true);
   controller.startSailing();
   assert.equal(layers.size, 2, "one sea and one ship instance are reused");
@@ -102,6 +108,15 @@ test("sailing texture is one non-looping four-second layer and rapid replay cann
   assert.equal(controller.snapshot().sailing, false);
   assert.equal(ship.currentTime, 0);
   assert.equal(SAILING_DURATION_MS, 4_000);
+});
+
+test("the accepted corrective mix keeps voice first and uses a smooth short fade", () => {
+  assert.equal(AMBIENCE_VOLUME, 0.095);
+  assert.equal(SHIP_VOLUME, 0.075);
+  assert.equal(DUCKED_VOLUME, 0.015);
+  assert.equal(SOUNDSCAPE_FADE_MS, 280);
+  assert.ok(DUCKED_VOLUME < AMBIENCE_VOLUME * 0.2);
+  assert.ok(SHIP_VOLUME < AMBIENCE_VOLUME);
 });
 
 test("blocked and failed assets fail open without changing product state", async () => {

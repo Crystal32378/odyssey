@@ -3,9 +3,10 @@ export const SEA_AMBIENCE_SOURCE = "/audio/aegean-sea-ambience.mp3";
 export const SAILING_SOURCE = "/audio/wooden-ship-sailing.wav";
 export const SAILING_DURATION_MS = 4_000;
 
-const AMBIENCE_VOLUME = 0.13;
-const DUCKED_VOLUME = 0.035;
-const SHIP_VOLUME = 0.11;
+export const AMBIENCE_VOLUME = 0.095;
+export const DUCKED_VOLUME = 0.015;
+export const SHIP_VOLUME = 0.075;
+export const SOUNDSCAPE_FADE_MS = 280;
 const FADE_STEPS = 8;
 const FADE_STEP_MS = 35;
 
