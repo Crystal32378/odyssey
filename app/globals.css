@@ -74,13 +74,16 @@ button { cursor: pointer; }
 .story { margin: 0; color: #c4d0cc; font-size: clamp(1.05rem,1.45vw,1.35rem); line-height: 1.48; text-wrap: pretty; }
 .narrative-has-luna { grid-template-rows: minmax(108px,auto) minmax(54px,auto) minmax(148px,auto); }
 .narrative-has-luna > :not(.luna-threshold) { animation: luna-homer-recede 700ms ease 2.6s both; }
+.narrative-has-luna:has(.luna-threshold[data-luna-state="threshold"]) > .homer-witness { animation-name: luna-homer-recede-soft; }
+.narrative-has-luna:has(.luna-threshold[data-luna-state="threshold"]) > .homer-witness .story { opacity: .28; }
+.narrative-has-luna:has(.luna-threshold:not([data-luna-state="threshold"])) > :not(.luna-threshold) { animation-name: luna-homer-recede-deep; animation-delay: 0s; }
 .luna-threshold { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
 .luna-threshold::before { content: ""; position: absolute; inset: 0; background: rgba(3,7,9,.12); }
 .luna-scene-effect, .luna-threshold-copy { position: absolute; }
 .luna-scene-effect { pointer-events: none; }
-.luna-material-wine .luna-scene-effect { left: 47.5%; top: 58%; width: 7%; height: 3%; }
-.luna-material-wine .luna-scene-effect span { position: absolute; inset: 20% 7%; border-top: 1px solid rgba(214,226,223,.62); border-radius: 50%; animation: luna-wine-glide 7s ease-in-out infinite; }
-.luna-material-wine .luna-scene-effect i { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(ellipse,rgba(206,220,216,.14),transparent 68%); }
+.luna-material-wine .luna-scene-effect { left: 48.2%; top: 59.2%; width: 5.5%; height: 1.7%; transform: rotate(-4deg); }
+.luna-material-wine .luna-scene-effect span { position: absolute; inset: 38% 0; background: linear-gradient(100deg,transparent 3%,rgba(200,215,213,.12) 28%,rgba(224,232,228,.58) 49%,rgba(190,208,207,.1) 72%,transparent 97%); filter: blur(.35px); animation: luna-wine-glide 7s ease-in-out infinite; }
+.luna-material-wine .luna-scene-effect i { display: none; }
 .luna-material-pearl .luna-scene-effect { left: 72.5%; top: 47%; width: 16%; height: 8%; }
 .luna-material-pearl .luna-scene-effect span, .luna-material-pearl .luna-scene-effect i { position: absolute; left: 0; right: 0; height: 55%; border-top: 1px solid rgba(205,222,223,.5); border-radius: 50%; }
 .luna-material-pearl .luna-scene-effect i { inset: 24% 12% auto; opacity: .62; }
@@ -94,8 +97,9 @@ button { cursor: pointer; }
 .luna-material-veil .luna-threshold-copy:has(.luna-action) { left: 71%; top: 74%; }
 .luna-pending { margin: 0; color: #c8b17f; font-size: .58rem; letter-spacing: .17em; }
 .luna-threshold-copy:has(.luna-pending) { left: 50%; bottom: 9vh; transform: translateX(-50%); }
-.luna-threshold-copy:has(.luna-utterance) { left: 7vw; bottom: 8vh; width: min(620px,44vw); }
-.luna-material-veil .luna-threshold-copy:has(.luna-utterance) { left: auto; right: 5vw; width: min(640px,44vw); }
+.luna-threshold-copy:has(.luna-utterance) { left: 7vw; top: 53%; bottom: auto; width: min(620px,44vw); transform: translateY(-18%); }
+.luna-material-pearl .luna-threshold-copy:has(.luna-utterance) { top: 55%; }
+.luna-material-veil .luna-threshold-copy:has(.luna-utterance) { left: auto; right: 5vw; top: 54%; width: min(640px,44vw); }
 .luna-utterance { display: grid; gap: 8px; }
 .luna-character, .luna-mark { margin: 0; }
 .luna-character { color: #b8b5ad; font-size: .57rem; letter-spacing: .17em; }
@@ -161,6 +165,13 @@ button { cursor: pointer; }
 .homer-audio small { max-width: 430px; color: #716f67; font-size: .67rem; line-height: 1.4; }
 .homer-audio p { margin: 0; color: #ba8a78; font-size: .72rem; }
 .homer-audio p button { border: 0; border-bottom: 1px solid currentColor; padding: 0; background: transparent; color: inherit; font-size: inherit; }
+.journey-luna-active:has(.luna-threshold[data-luna-state="threshold"]) .homer-audio { gap: 9px; opacity: .92; }
+.journey-luna-active:has(.luna-threshold[data-luna-state="threshold"]) .homer-medallion { width: 34px; height: 34px; opacity: .42; }
+.journey-luna-active:has(.luna-threshold[data-luna-state="threshold"]) .homer-audio-controls { gap: 6px; }
+.journey-luna-active:has(.luna-threshold[data-luna-state="threshold"]) .homer-audio-controls > button { border-color: rgba(169,138,77,.38); padding: 8px 11px; color: rgba(231,213,175,.68); font-size: .58rem; }
+.journey-luna-active:has(.luna-threshold[data-luna-state="threshold"]) .homer-audio-controls > button:hover,
+.journey-luna-active:has(.luna-threshold[data-luna-state="threshold"]) .homer-audio-controls > button:focus-visible { border-color: rgba(202,166,100,.72); background: rgba(177,139,76,.12); color: #e7d5af; }
+.journey-luna-active:has(.luna-threshold[data-luna-state="threshold"]) .homer-audio small { color: rgba(113,111,103,.72); font-size: .6rem; }
 .answer-shore { margin-top: 13px; }
 .journey-actions { display: flex; align-items: baseline; gap: 25px; flex-wrap: wrap; }
 .journey-actions .journey-error { flex-basis: 100%; }
@@ -233,8 +244,10 @@ button { cursor: pointer; }
 @keyframes luna-pearl-pass { 0%,100% { transform: translateY(1px); } 50% { transform: translateY(-3px); } }
 @keyframes luna-veil-breathe { 0%,100% { transform: scale(1); opacity: .92; } 50% { transform: scale(1.025); opacity: 1; } }
 @keyframes luna-pending-pulse { 0%,100% { opacity: .58; } 50% { opacity: 1; } }
-@keyframes luna-homer-recede { to { opacity: .22; filter: blur(.3px); } }
-@keyframes luna-wine-glide { 0%,100% { opacity: .28; transform: translateX(-8%) scaleX(.88); } 50% { opacity: .78; transform: translateX(8%) scaleX(1.04); } }
+@keyframes luna-homer-recede { from { opacity: 1; filter: none; } to { opacity: .22; filter: blur(.3px); } }
+@keyframes luna-homer-recede-soft { from { opacity: 1; filter: none; } to { opacity: .75; filter: blur(.15px); } }
+@keyframes luna-homer-recede-deep { from { opacity: .22; filter: blur(.3px); } to { opacity: 0; filter: blur(.35px); } }
+@keyframes luna-wine-glide { 0%,100% { opacity: .14; transform: translateX(-12%); } 48% { opacity: .62; } 60% { opacity: .28; transform: translateX(12%); } }
 @keyframes luna-water-response { from { opacity: .78; transform: scale(.82); } to { opacity: 0; transform: scale(1.22); } }
 @keyframes penelope-image-settle { from { opacity: .68; transform: scale(1.018); } to { opacity: 1; transform: none; } }
 @keyframes penelope-copy-reveal { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -269,7 +282,7 @@ button { cursor: pointer; }
   .journey-luna-active .island-art { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100svh; min-height: 0; }
   .journey-luna-active .island-art img { object-position: var(--focal-mobile); }
   .journey-luna-active .narrative { position: fixed; inset: 0; z-index: 1; padding: 0; background: transparent; }
-  .luna-material-wine .luna-scene-effect { left: 47%; top: 56%; width: 13%; height: 4%; }
+  .luna-material-wine .luna-scene-effect { left: 48%; top: 57%; width: 9%; height: 1.6%; }
   .luna-material-pearl .luna-scene-effect { left: 67%; top: 43%; width: 25%; height: 9%; }
   .luna-material-veil .luna-scene-effect { left: 2%; top: 14%; width: 58%; height: 68%; }
   .journey-luna-active .island-calypso .narrative > :not(.luna-threshold) { width: 49%; margin-left: 46%; }
@@ -277,8 +290,9 @@ button { cursor: pointer; }
   .luna-material-wine .luna-threshold-copy:has(.luna-action) { left: 39%; top: 63%; }
   .luna-material-pearl .luna-threshold-copy:has(.luna-action) { left: 48%; top: 54%; }
   .luna-material-veil .luna-threshold-copy:has(.luna-action) { left: 56%; top: 78%; }
-  .luna-threshold-copy:has(.luna-utterance) { left: 7vw; bottom: 7vh; width: 86vw; }
-  .luna-material-veil .luna-threshold-copy:has(.luna-utterance) { left: 46%; right: auto; bottom: 6vh; width: 49%; }
+  .luna-threshold-copy:has(.luna-utterance) { left: 7vw; top: auto; bottom: 10vh; width: 86vw; transform: none; }
+  .luna-material-pearl .luna-threshold-copy:has(.luna-utterance) { top: auto; bottom: 9vh; }
+  .luna-material-veil .luna-threshold-copy:has(.luna-utterance) { left: 46%; right: auto; top: auto; bottom: 8vh; width: 49%; }
   .luna-utterance blockquote { font-size: 1.25rem; line-height: 1.32; }
   .journey-actions { gap: 22px; }.answer-shore { flex-basis: auto; }.new-voyage { margin-left: 0; }
   .ending { padding: 8vh 8vw 60px; }.ending h1 { font-size: clamp(3rem,16vw,4.3rem); line-height: 1.02; }.ending-lede { font-size: 1rem; }
@@ -291,7 +305,7 @@ button { cursor: pointer; }
   .penelope-copy h2 { font-size: clamp(3rem,15vw,4.7rem); }
   .penelope-copy blockquote { margin-top: 26px; font-size: 1.2rem; }
 }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }.voyage-map-plane, .voyage-map-plane.is-sailing, .voyage-map-plane.is-preparing { animation: none !important; transform: scale(1) translate3d(-43.5%,-50%,0); }.voyage-map-plane svg, .voyage-vessel-motion { display: none; }.stage-step { opacity: 1 !important; transform: none !important; animation: none !important; }.narrative-has-luna > :not(.luna-threshold) { opacity: .22 !important; filter: none !important; }.ritual-memory q, .card-forming, .forming-fields i, .penelope-recognition img, .penelope-copy { animation: none !important; transform: none !important; }.luna-scene-effect span, .luna-scene-effect i, .luna-pending { animation: none !important; transform: none !important; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }.voyage-map-plane, .voyage-map-plane.is-sailing, .voyage-map-plane.is-preparing { animation: none !important; transform: scale(1) translate3d(-43.5%,-50%,0); }.voyage-map-plane svg, .voyage-vessel-motion { display: none; }.stage-step { opacity: 1 !important; transform: none !important; animation: none !important; }.narrative-has-luna > :not(.luna-threshold) { opacity: .22 !important; filter: none !important; }.narrative-has-luna:has(.luna-threshold[data-luna-state="threshold"]) > .homer-witness { opacity: .75 !important; }.narrative-has-luna:has(.luna-threshold:not([data-luna-state="threshold"])) > :not(.luna-threshold) { opacity: 0 !important; }.ritual-memory q, .card-forming, .forming-fields i, .penelope-recognition img, .penelope-copy { animation: none !important; transform: none !important; }.luna-scene-effect span, .luna-scene-effect i, .luna-pending { animation: none !important; transform: none !important; } }
 
 /* Divine Presence mounts only after a voyage has settled; its image is never preloaded by this stage. */
 .divine-presence { min-height: 100svh; position: relative; isolation: isolate; overflow: hidden; display: grid; outline: 0; background: #dbe1df; color: #17313a; }

@@ -13,7 +13,7 @@ const assets = [
 
 test("threshold requires an explicit player gesture and never shows provisional character text", () => {
   assert.match(component, /!pending && !outcome \? \(/);
-  assert.match(component, /className="luna-action" type="button" onClick=\{onOpen\}/);
+  assert.match(component, /className="luna-action" type="button" tabIndex=\{1\} onClick=\{onOpen\}/);
   assert.match(component, /pending \? \([\s\S]*THE THRESHOLD GATHERS/);
   assert.match(component, /outcome \? \([\s\S]*<blockquote/);
   assert.doesNotMatch(component, /registry\.fallback|setTimeout|fetch\(|new Audio|<audio/);
@@ -44,6 +44,18 @@ test("keyboard, screen-reader, scene-native motion, mobile, and reduced-motion c
   assert.match(styles, /@media \(min-width: 851px\) and \(max-height: 760px\)[\s\S]*\.narrative-has-luna \{[^}]*grid-template-rows:/);
   assert.match(styles, /@media \(max-width: 850px\)[\s\S]*\.journey-luna-active \.island-art \{[^}]*position: fixed/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.luna-scene-effect span, \.luna-scene-effect i, \.luna-pending \{[^}]*animation: none !important/);
+});
+
+test("invitation hierarchy preserves a labeled Homer control and scene-specific reading zones", () => {
+  assert.match(styles, /data-luna-state="threshold"[\s\S]*\.homer-audio-controls > button/);
+  assert.match(styles, /data-luna-state="threshold"[^}]*\) > \.homer-witness \{ animation-name: luna-homer-recede-soft/);
+  assert.match(styles, /\.luna-threshold:not\(\[data-luna-state="threshold"\]\)[^}]*> :not\(\.luna-threshold\) \{ animation-name: luna-homer-recede-deep; animation-delay: 0s/);
+  assert.match(styles, /@keyframes luna-homer-recede-soft \{ from \{ opacity: 1;/);
+  assert.match(styles, /@keyframes luna-homer-recede-deep \{ from \{ opacity: \.22;[^}]*\} to \{ opacity: 0;/);
+  assert.match(styles, /\.luna-material-pearl \.luna-threshold-copy:has\(\.luna-utterance\) \{ top: 55%/);
+  assert.match(styles, /\.luna-material-veil \.luna-threshold-copy:has\(\.luna-utterance\)[^}]*right: 5vw; top: 54%/);
+  assert.match(styles, /\.luna-material-wine \.luna-scene-effect i \{ display: none; \}/);
+  assert.doesNotMatch(styles, /\.luna-material-wine \.luna-scene-effect span \{[^}]*border-(?:top|radius)/);
 });
 
 test("approved optimized threshold assets remain exact", () => {
