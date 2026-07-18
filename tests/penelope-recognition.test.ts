@@ -30,7 +30,8 @@ test("the recognition remains authored, stable, and independent of its optional 
   assert.ok(imageStart >= 0 && imageEnd < lineIndex, "canonical text must not depend on image success");
   assert.doesNotMatch(component, /gpt-5\.6-luna|AI-generated|fetch\(|<audio|new Audio|button/);
   assert.doesNotMatch(component, /soundscape|PENELOPE_LOOM_SESSION_KEY|playPenelopeLoom/, "Penelope mount is visual and cannot trigger or replay audio");
-  assert.match(page, /memory\.ending === "ithaca"[\s\S]*soundscape\?\.beginIthacaReturn\(\)/);
+  assert.match(page, /memory\?\.ending !== "ithaca"[\s\S]*soundscape\?\.enterIthacaEnding\(\)/);
+  assert.match(page, /memory\.ending === "ithaca"[\s\S]*soundscape\?\.playIthacaLoom\(\)/);
   assert.match(page, /sessionStorage\.getItem\(PENELOPE_LOOM_SESSION_KEY\) === "played"/);
   assert.match(page, /if \(!played\) return;[\s\S]*sessionStorage\.setItem\(PENELOPE_LOOM_SESSION_KEY, "played"\)/);
   assert.match(page, /sessionStorage\.removeItem\(PENELOPE_LOOM_SESSION_KEY\)/);

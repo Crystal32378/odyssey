@@ -1,5 +1,5 @@
 {
-  "commit": "42ad474-six-divines",
+  "commit": "ithaca-early-sea-fade",
   "url": "http://localhost:4173",
   "viewport": "mobile",
   "globalAudio": {
@@ -15,7 +15,7 @@
       "ended": false,
       "muted": false,
       "volume": 0.082,
-      "currentTime": 1.200389,
+      "currentTime": 1.213043,
       "playCalls": 1,
       "playResolved": 1,
       "playRejected": []
@@ -32,7 +32,7 @@
         "paused": false,
         "muted": false,
         "volume": 0.22,
-        "currentTime": 0.293646,
+        "currentTime": 0.279171,
         "playCalls": 1,
         "playResolved": 1,
         "playRejected": []
@@ -43,7 +43,7 @@
         "paused": false,
         "muted": false,
         "volume": 0.22,
-        "currentTime": 0.292424,
+        "currentTime": 0.301619,
         "playCalls": 2,
         "playResolved": 2,
         "playRejected": []
@@ -54,7 +54,7 @@
         "paused": false,
         "muted": false,
         "volume": 0.22,
-        "currentTime": 0.291022,
+        "currentTime": 0.301554,
         "playCalls": 3,
         "playResolved": 3,
         "playRejected": []
@@ -65,7 +65,7 @@
         "paused": false,
         "muted": false,
         "volume": 0.22,
-        "currentTime": 0.28978,
+        "currentTime": 0.300354,
         "playCalls": 4,
         "playResolved": 4,
         "playRejected": []
@@ -76,7 +76,7 @@
         "paused": false,
         "muted": false,
         "volume": 0.22,
-        "currentTime": 0.284887,
+        "currentTime": 0.309463,
         "playCalls": 5,
         "playResolved": 5,
         "playRejected": []
@@ -87,7 +87,7 @@
         "paused": false,
         "muted": false,
         "volume": 0.22,
-        "currentTime": 0.305942,
+        "currentTime": 0.308488,
         "playCalls": 6,
         "playResolved": 6,
         "playRejected": []
@@ -95,6 +95,10 @@
     ]
   },
   "penelope": {
+    "arrival": {
+      "sea": 0,
+      "loomCount": 0
+    },
     "ithacaStarted": true,
     "active": {
       "count": 1,
@@ -102,7 +106,7 @@
       "paused": false,
       "muted": false,
       "volume": 0.14,
-      "currentTime": 0.544712,
+      "currentTime": 0.541643,
       "playCalls": 1,
       "playResolved": 1,
       "playRejected": [],

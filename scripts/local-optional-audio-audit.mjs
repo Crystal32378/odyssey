@@ -121,23 +121,24 @@ const divine = await evaluate(`(async()=>{
   return {count:layers.length,loop:layers[0]?.loop,pausedAfterAll:layers[0]?.paused,evidence};
 })()`);
 
-const ithacaStarted = await evaluate(`(async()=>{sessionStorage.removeItem('odyssey.penelope.loom-played.v1');const played=await window.__soundscape.beginIthacaReturn();if(played)sessionStorage.setItem('odyssey.penelope.loom-played.v1','played');return played})()`,true);
+const ithacaArrival = await evaluate(`(async()=>{sessionStorage.removeItem('odyssey.penelope.loom-played.v1');window.__soundscape.enterIthacaEnding();await new Promise(r=>setTimeout(r,360));const sea=window.__audio.find(a=>a.src.endsWith('/audio/aegean-sea-ambience.mp3'));return {sea:sea?.volume,loomCount:window.__audio.filter(a=>a.src.endsWith('/audio/penelope-loom.wav')).length}})()`);
+const ithacaStarted = await evaluate(`(async()=>{const played=await window.__soundscape.playIthacaLoom();if(played)sessionStorage.setItem('odyssey.penelope.loom-played.v1','played');return played})()`,true);
 await delay(600);
 const penelope = await evaluate(`(async()=>{
   const looms=window.__audio.filter(a=>a.src.endsWith('/audio/penelope-loom.wav'));
   const sea=window.__audio.find(a=>a.src.endsWith('/audio/aegean-sea-ambience.mp3'));
   const active={count:looms.length,loop:looms[0]?.loop,paused:looms[0]?.paused,muted:looms[0]?.muted,volume:looms[0]?.volume,currentTime:looms[0]?.currentTime,playCalls:looms[0]?.__playCalls,playResolved:looms[0]?.__playResolved,playRejected:looms[0]?.__playRejected,sea:sea?.volume,guard:sessionStorage.getItem('odyssey.penelope.loom-played.v1')};
-  const replay=await window.__soundscape.beginIthacaReturn();
+  const replay=await window.__soundscape.playIthacaLoom();
   looms[0]?.onended?.();await new Promise(r=>setTimeout(r,360));
   const completed={count:window.__audio.filter(a=>a.src.endsWith('/audio/penelope-loom.wav')).length,paused:looms[0]?.paused,sea:sea?.volume,replay};
   sessionStorage.removeItem('odyssey.penelope.loom-played.v1');
-  return {ithacaStarted:${JSON.stringify(ithacaStarted)},active,completed,restartGuardCleared:sessionStorage.getItem('odyssey.penelope.loom-played.v1')===null};
+  return {arrival:${JSON.stringify(ithacaArrival)},ithacaStarted:${JSON.stringify(ithacaStarted)},active,completed,restartGuardCleared:sessionStorage.getItem('odyssey.penelope.loom-played.v1')===null};
 })()`);
 
 const result = { commit: process.env.AUDIT_COMMIT || "9db562f", url: baseUrl, viewport: mobile ? "mobile" : "desktop", globalAudio, divine, penelope, calypso: { loomLayersWithoutPenelope: 0 }, events };
 if (!globalAudio.sea || globalAudio.snapshot.muted || globalAudio.sea.paused || globalAudio.sea.currentTime <= 0 || globalAudio.sea.playResolved !== 1 || globalAudio.sea.playRejected.length) throw new Error(`Sea runtime evidence failed: ${JSON.stringify(globalAudio)}`);
 if (divine.count !== 1 || divine.loop !== false || !divine.pausedAfterAll || divine.evidence.length !== 6 || divine.evidence.some((entry,index)=>entry.paused || entry.muted || entry.currentTime <= 0 || entry.playCalls !== index+1 || entry.playResolved !== index+1 || entry.playRejected.length)) throw new Error(`Divine runtime evidence failed: ${JSON.stringify(divine)}`);
-if (penelope.active.count !== 1 || penelope.active.loop !== false || penelope.active.paused || penelope.active.currentTime <= 0 || penelope.active.playResolved !== 1 || penelope.active.playRejected.length || penelope.active.sea !== 0 || penelope.active.guard !== "played" || penelope.completed.count !== 1 || !penelope.completed.paused || penelope.completed.sea !== 0 || penelope.completed.replay !== false || !penelope.restartGuardCleared) throw new Error(`Penelope runtime evidence failed: ${JSON.stringify(penelope)}`);
+if (penelope.arrival.sea !== 0 || penelope.arrival.loomCount !== 0 || penelope.ithacaStarted !== true || penelope.active.count !== 1 || penelope.active.loop !== false || penelope.active.paused || penelope.active.currentTime <= 0 || penelope.active.playResolved !== 1 || penelope.active.playRejected.length || penelope.active.sea !== 0 || penelope.active.guard !== "played" || penelope.completed.count !== 1 || !penelope.completed.paused || penelope.completed.sea !== 0 || penelope.completed.replay !== false || !penelope.restartGuardCleared) throw new Error(`Penelope runtime evidence failed: ${JSON.stringify(penelope)}`);
 if (events.consoleErrors.length || events.exceptions.length || events.failedRequests.length) throw new Error(`Unexpected browser errors: ${JSON.stringify(events)}`);
 fs.writeFileSync(path.join(evidenceDir, `optional-audio-${mobile ? "mobile" : "desktop"}.json`), `${JSON.stringify(result, null, 2)}\n`);
 await send("Target.closeTarget", { targetId: target.id }); socket.close(); server?.kill("SIGTERM");

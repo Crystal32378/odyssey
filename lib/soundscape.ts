@@ -47,6 +47,7 @@ export class SoundscapeController {
   private penelopeLoom: AudioLayer | null = null;
   private loomActive = false;
   private ithacaReturn = false;
+  private ithacaLoomPlayed = false;
   private active = false;
   private muted = false;
   private voiceActive = false;
@@ -78,6 +79,7 @@ export class SoundscapeController {
   leaveJourney() {
     this.active = false;
     this.ithacaReturn = false;
+    this.ithacaLoomPlayed = false;
     this.voiceActive = false;
     this.stopSailing();
     this.stopDivineAccent();
@@ -170,13 +172,19 @@ export class SoundscapeController {
     }
   }
 
-  async beginIthacaReturn(): Promise<boolean> {
-    if (this.ithacaReturn) return false;
+  enterIthacaEnding() {
+    if (this.ithacaReturn) return;
     this.ithacaReturn = true;
     this.stopSailing();
     this.stopDivineAccent();
     this.stopFade();
     if (this.ambience) this.fadeAmbience(0);
+  }
+
+  async playIthacaLoom(): Promise<boolean> {
+    if (this.ithacaLoomPlayed) return false;
+    this.ithacaLoomPlayed = true;
+    this.enterIthacaEnding();
     return this.playPenelopeLoom();
   }
 

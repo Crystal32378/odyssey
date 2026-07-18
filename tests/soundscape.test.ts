@@ -161,17 +161,21 @@ test("Penelope loom is non-looping, non-stacking, muted, and restores the sea", 
   assert.ok(loom.pauseCount >= 3);
 });
 
-test("Ithaca reveal silences the sea, plays one loom passage, and leaves a full stop", async () => {
+test("Ithaca arrival silences the sea before Reveal; Reveal plays one loom and leaves a full stop", async () => {
   const { controller, layers } = setup();
   controller.enterJourney();
   await settleFade();
-  assert.equal(await controller.beginIthacaReturn(), true);
+  controller.enterIthacaEnding();
   await settleFade();
   const sea = layers.get(SEA_AMBIENCE_SOURCE)!;
+  assert.equal(sea.volume, 0, "the final ending screen is already silent before Reveal");
+  assert.equal(layers.has(PENELOPE_LOOM_SOURCE), false, "arrival cannot start the loom");
+  assert.equal(await controller.playIthacaLoom(), true);
+  await settleFade();
   const loom = layers.get(PENELOPE_LOOM_SOURCE)!;
   assert.equal(sea.volume, 0);
   assert.equal(loom.playCount, 1);
-  assert.equal(await controller.beginIthacaReturn(), false, "the same return cannot replay the loom");
+  assert.equal(await controller.playIthacaLoom(), false, "the same return cannot replay the loom");
   loom.onended?.();
   await new Promise((resolve) => setTimeout(resolve, 400));
   assert.equal(sea.volume, 0, "completed Ithaca remains silent after the loom ends");
@@ -220,7 +224,8 @@ test("wiring keeps Soundscape outside Journey authority and preserves labelled a
   const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(page, /if \(!reducedMotion\) soundscape\?\.startSailing\(\)/);
   assert.match(page, /window\.addEventListener\("pointerdown", onPointer, true\)/);
-  assert.match(page, /soundscape\?\.beginIthacaReturn\(\)/);
+  assert.match(page, /soundscape\?\.enterIthacaEnding\(\)/);
+  assert.match(page, /soundscape\?\.playIthacaLoom\(\)/);
   assert.match(page, /soundscape\?\.setVoiceActive\(true\)/);
   assert.match(page, /soundscape\?\.leaveJourney\(\)/);
   assert.doesNotMatch(controller, /from ["']\.\/journey|setMemory|setPhase|resolveIsland|generateEnding/);

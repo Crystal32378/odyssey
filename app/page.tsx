@@ -170,7 +170,7 @@ export default function Home() {
   useEffect(() => { audioRef.current?.pause(); if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); audioRef.current = null; audioUrlRef.current = null; setAudioStatus("idle"); }, [scene?.narrative]);
   useEffect(() => {
     if (!hydrated) return;
-    if (memory?.ending === "ithaca" && card) return;
+    if (memory?.ending === "ithaca") return;
     const unlock = () => {
       soundscape?.enterJourney();
       window.removeEventListener("pointerdown", onPointer, true);
@@ -184,7 +184,11 @@ export default function Home() {
     window.addEventListener("pointerdown", onPointer, true);
     window.addEventListener("keydown", onKey, true);
     return () => { window.removeEventListener("pointerdown", onPointer, true); window.removeEventListener("keydown", onKey, true); };
-  }, [card, hydrated, memory?.ending, phase]);
+  }, [hydrated, memory?.ending, phase]);
+  useEffect(() => {
+    if (!hydrated || memory?.ending !== "ithaca") return;
+    soundscape?.enterIthacaEnding();
+  }, [hydrated, memory?.ending]);
   useEffect(() => { if (phase !== "voyaging") soundscape?.stopSailing(); }, [phase]);
   function describeError(error: unknown) { const e = error as Error & { requestId?: string }; return { message: e.message || "The sea has not answered.", requestId: e.requestId || "" }; }
   function recordError(error: unknown) { const details = describeError(error); setErrorMessage(details.message); setRequestId(details.requestId); }
@@ -261,7 +265,7 @@ export default function Home() {
       let alreadyPlayed = false;
       try { alreadyPlayed = sessionStorage.getItem(PENELOPE_LOOM_SESSION_KEY) === "played"; } catch { /* The return remains complete without storage. */ }
       if (!alreadyPlayed) {
-        void soundscape?.beginIthacaReturn().then((played) => {
+        void soundscape?.playIthacaLoom().then((played) => {
           if (!played) return;
           try { sessionStorage.setItem(PENELOPE_LOOM_SESSION_KEY, "played"); } catch { /* Audio remains optional without storage. */ }
         });
