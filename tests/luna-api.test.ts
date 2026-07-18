@@ -18,6 +18,7 @@ import type {
 
 const JOURNEY_ID = "123e4567-e89b-42d3-a456-426614174000";
 const quietLogger = { info() {}, error() {} };
+const VALID_LINE = "One quiet threshold reveals the cost of stopping here, while the road beyond remains entirely yours to choose.";
 
 class TestLedger implements EncounterReceiptLedger {
   reservation: ReceiptReservation<unknown> = { kind: "winner" };
@@ -75,7 +76,7 @@ test("each canonical threshold infers its server-owned actor and fixed Luna mode
       ledger: new TestLedger(), apiKey: "test-key", logger: quietLogger,
       fetchImpl: async (_input, init) => {
         captured.body = JSON.parse(String(init?.body));
-        return lunaResponse({ spokenLine: "The threshold names a cost without choosing for you.", memoryRefs: [`${ISLANDS[index - 1].id}.answer`] });
+        return lunaResponse({ spokenLine: VALID_LINE, memoryRefs: [`${ISLANDS[index - 1].id}.answer`] });
       },
     });
     assert.equal(response.status, 200);
@@ -102,7 +103,7 @@ test("the receipt owner retries one incomplete generation and persists only the 
   const ledger = new TestLedger();
   const outputs = [
     "You may remain sheltered, or let this stillness be",
-    "You may remain sheltered, or let this stillness reveal the cost of staying.",
+    "You may remain sheltered here, while the unfinished road waits beyond this stillness without naming which life you should choose.",
   ];
   let calls = 0;
   const response = await handleLunaRequest(request(bodyAt(11)), {
@@ -215,7 +216,7 @@ test("twenty concurrent Luna requests invoke the model exactly once and cache on
     fetchImpl: async () => {
       calls += 1;
       await new Promise((resolve) => setTimeout(resolve, 15));
-      return lunaResponse({ spokenLine: "The shape you keep remains yours to name.", memoryRefs: [] });
+      return lunaResponse({ spokenLine: VALID_LINE, memoryRefs: [] });
     },
   });
   const responses = await Promise.all(Array.from({ length: 20 }, invoke));
@@ -224,7 +225,7 @@ test("twenty concurrent Luna requests invoke the model exactly once and cache on
   assert.equal(responses.filter((response) => response.status === 202).length, 19);
   const cached = await invoke();
   assert.equal(cached.status, 200);
-  assert.equal((await cached.json()).spokenLine, "The shape you keep remains yours to name.");
+  assert.equal((await cached.json()).spokenLine, VALID_LINE);
   assert.equal(calls, 1);
 });
 

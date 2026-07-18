@@ -167,6 +167,7 @@ async function invokeLuna(payload: CleanLunaRequest, dependencies: LunaHandlerDe
               `Persona: ${prompt.persona}`,
               `Canonical lore capsule: ${prompt.lore}`,
               ...registry.languageRules,
+              "Do not summarize the journey. Leave space for the traveler rather than resolving the tension.",
               "Return only the strict structured output. memoryRefs may cite only references supplied by the user payload.",
             ].join("\n"),
           },
@@ -187,7 +188,7 @@ async function invokeLuna(payload: CleanLunaRequest, dependencies: LunaHandlerDe
             schema: lunaOutputSchema(allowedMemoryRefs),
           },
         },
-        max_output_tokens: 260,
+        max_output_tokens: 180,
       }),
     });
     const requestId = response.headers.get("x-request-id");
@@ -246,12 +247,12 @@ function lunaOutputSchema(memoryRefs: readonly string[]) {
       spokenLine: {
         type: "string",
         minLength: 1,
-        maxLength: 280,
-        description: "One or two concise sentences without line breaks, diagnosis, prescription, or moral scoring.",
+        maxLength: 180,
+        description: "One or two short sentences, 18 to 32 English words, expressing one unresolved character-specific tension.",
       },
       memoryRefs: {
         type: "array",
-        maxItems: 2,
+        maxItems: 1,
         items: { type: "string", enum: memoryRefs },
       },
     },

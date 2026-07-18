@@ -13,7 +13,7 @@ const assets = [
 
 test("threshold requires an explicit player gesture and never shows provisional character text", () => {
   assert.match(component, /!pending && !outcome \? \(/);
-  assert.match(component, /<button type="button" onClick=\{onOpen\}>/);
+  assert.match(component, /className="luna-action" type="button" onClick=\{onOpen\}/);
   assert.match(component, /pending \? \([\s\S]*THE THRESHOLD GATHERS/);
   assert.match(component, /outcome \? \([\s\S]*<blockquote/);
   assert.doesNotMatch(component, /registry\.fallback|setTimeout|fetch\(|new Audio|<audio/);
@@ -32,16 +32,18 @@ test("pending, generated, fallback, failed, and recovered states are machine-dis
   assert.match(component, /THE AUTHORED WORDS REMAIN/);
 });
 
-test("keyboard, screen-reader, image-failure, mobile, and reduced-motion contracts are present", () => {
+test("keyboard, screen-reader, scene-native motion, mobile, and reduced-motion contracts are present", () => {
   assert.match(component, /aria-labelledby=/);
   assert.match(component, /aria-label=\{!outcome/);
   assert.match(component, /aria-describedby=/);
   assert.match(component, /role="status" aria-live="polite" aria-busy=\{pending\}/);
-  assert.match(component, /onError=\{\(\) => setImageFailed\(true\)\}/);
-  assert.match(styles, /\.luna-threshold-copy button:focus-visible \{[^}]*outline:/);
+  assert.doesNotMatch(component, /<img|imageSrc|setImageFailed/);
+  assert.match(component, /className="luna-scene-effect"/);
+  assert.match(component, /CONTINUE TO THE SHORE/);
+  assert.match(styles, /\.luna-action:focus-visible,[^{]*\.luna-continue:focus-visible \{[^}]*outline:/);
   assert.match(styles, /@media \(min-width: 851px\) and \(max-height: 760px\)[\s\S]*\.narrative-has-luna \{[^}]*grid-template-rows:/);
-  assert.match(styles, /@media \(max-width: 850px\)[\s\S]*\.luna-threshold \{[^}]*width: 100%/);
-  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.luna-threshold-object img, \.luna-pending \{[^}]*animation: none !important/);
+  assert.match(styles, /@media \(max-width: 850px\)[\s\S]*\.journey-luna-active \.island-art \{[^}]*position: fixed/);
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.luna-scene-effect span, \.luna-scene-effect i, \.luna-pending \{[^}]*animation: none !important/);
 });
 
 test("approved optimized threshold assets remain exact", () => {

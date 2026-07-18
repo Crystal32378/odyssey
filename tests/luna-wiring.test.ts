@@ -13,8 +13,12 @@ test("stable Homer witness precedes the explicit Luna threshold, then choice and
   const choice = page.indexOf('{lunaSettled && <section className="choice-beat');
   const response = page.indexOf('{lunaSettled && <div className="response-band');
   assert.ok(witness >= 0 && witness < threshold && threshold < choice && choice < response);
-  assert.match(page, /const lunaSettled = !lunaTriggerId \|\| lunaSeen \|\| Boolean\(lunaActive\)/);
+  assert.match(page, /const lunaSettled = !lunaTriggerId \|\| lunaSeen \|\| lunaPresentationDone/);
   assert.match(page, /onOpen=\{openLunaThreshold\}/);
+  assert.match(page, /onContinue=\{continueLunaThreshold\}/);
+  assert.match(page, /setCompletedLunaPresentation\(lunaTriggerId\)/);
+  assert.doesNotMatch(page, /<p className="homer-cue">/);
+  assert.match(page, /aria-label="Homer bears witness"/);
 });
 
 test("no Luna request begins before a stable island and an explicit queued threshold", () => {

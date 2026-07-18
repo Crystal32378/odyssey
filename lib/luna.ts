@@ -45,8 +45,9 @@ export interface LunaEncounter {
 }
 
 const LANGUAGE_RULES = [
-  "Use one or two concise sentences.",
+  "Use one or two short English sentences, 18 to 32 words and no more than 180 characters total.",
   "Address one literary threshold already present at this shore.",
+  "Express one character-specific tension; do not recap multiple islands, choices, or traits, and do not explain the theme.",
   "Reflect only supplied journey evidence; never diagnose or invent hidden motives.",
   "Do not prescribe a choice, score morality, predict an ending, or claim Engine authority.",
   "Do not imitate Homer, a therapist, a companion, or a reward system.",
@@ -117,9 +118,11 @@ export function isLunaTriggerId(value: string): value is LunaTriggerId {
 
 export function validateLunaModelOutput(raw: unknown, allowedMemoryRefs: readonly string[]): LunaModelOutput | null {
   if (!isRecord(raw) || !hasExactKeys(raw, ["memoryRefs", "spokenLine"])) return null;
-  const spokenLine = cleanSingleLine(raw.spokenLine, 280);
+  const spokenLine = cleanSingleLine(raw.spokenLine, 180);
   if (!spokenLine || countSentenceEndings(spokenLine) > 2 || !isCompleteLunaSpokenLine(spokenLine)) return null;
-  if (!Array.isArray(raw.memoryRefs) || raw.memoryRefs.length > 2) return null;
+  const wordCount = spokenLine.match(/[A-Za-z0-9]+(?:[’'-][A-Za-z0-9]+)*/g)?.length ?? 0;
+  if (wordCount < 18 || wordCount > 32) return null;
+  if (!Array.isArray(raw.memoryRefs) || raw.memoryRefs.length > 1) return null;
 
   const allowlist = new Set(allowedMemoryRefs);
   const memoryRefs: string[] = [];

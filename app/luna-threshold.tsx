@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import type { ActiveLunaEncounter } from "../lib/luna-session";
 import { LUNA_REGISTRY, type LunaTriggerId } from "../lib/luna";
 
@@ -10,11 +9,11 @@ export interface LunaThresholdProps {
   readonly outcome: ActiveLunaEncounter | null;
   readonly recovered: boolean;
   readonly onOpen: () => void;
+  readonly onContinue: () => void;
 }
 
-export function LunaThreshold({ triggerId, pending, outcome, recovered, onOpen }: LunaThresholdProps) {
+export function LunaThreshold({ triggerId, pending, outcome, recovered, onOpen, onContinue }: LunaThresholdProps) {
   const registry = LUNA_REGISTRY[triggerId];
-  const [imageFailed, setImageFailed] = useState(false);
   const presentationState = outcome ? recovered ? "recovered" : outcome.state : pending ? "pending" : "threshold";
   const source = outcome?.encounter.source || "none";
   const provenance = outcome?.state === "generated"
@@ -27,7 +26,7 @@ export function LunaThreshold({ triggerId, pending, outcome, recovered, onOpen }
 
   return (
     <section
-      className={`luna-threshold stage-step stage-step-luna luna-material-${registry.presentation.material}${imageFailed ? " luna-image-failed" : ""}`}
+      className={`luna-threshold stage-step stage-step-luna luna-material-${registry.presentation.material}`}
       data-luna-state={presentationState}
       data-luna-source={source}
       data-luna-outcome={outcome?.state || "none"}
@@ -35,20 +34,11 @@ export function LunaThreshold({ triggerId, pending, outcome, recovered, onOpen }
       aria-labelledby={outcome ? `luna-name-${triggerId}` : undefined}
       aria-describedby={outcome ? `luna-mark-${triggerId} luna-line-${triggerId} luna-provenance-${triggerId}` : undefined}
     >
-      <div className="luna-threshold-object" aria-hidden="true">
-        {!imageFailed ? (
-          // This image is presentation-only; the text control and fallback remain complete without it.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={registry.presentation.imageSrc} alt="" decoding="async" onError={() => setImageFailed(true)} />
-        ) : <span />}
-      </div>
+      <div className="luna-scene-effect" aria-hidden="true"><span /><i /></div>
 
       <div className="luna-threshold-copy" role="status" aria-live="polite" aria-busy={pending}>
         {!pending && !outcome ? (
-          <button type="button" onClick={onOpen}>
-            <span>A LITERARY THRESHOLD</span>
-            <strong>{registry.presentation.thresholdLabel}</strong>
-          </button>
+          <button className="luna-action" type="button" onClick={onOpen}>{registry.presentation.thresholdLabel}</button>
         ) : pending ? (
           <p className="luna-pending">THE THRESHOLD GATHERS</p>
         ) : outcome ? (
@@ -59,6 +49,7 @@ export function LunaThreshold({ triggerId, pending, outcome, recovered, onOpen }
             <small id={`luna-provenance-${triggerId}`}>
               {recovered ? "RECOVERED FROM THIS JOURNEY · " : ""}{provenance}
             </small>
+            <button className="luna-continue" type="button" onClick={onContinue}>CONTINUE TO THE SHORE</button>
           </div>
         ) : null}
       </div>

@@ -7,6 +7,8 @@ import {
   validateLunaEncounterResponse,
 } from "../lib/luna-client.ts";
 import { composeLunaEncounter } from "../lib/luna.ts";
+
+const VALID_LINE = "One quiet threshold reveals the cost of stopping here, while the road beyond remains entirely yours to choose.";
 import { createJourneyMemory, ISLANDS, resolveIsland, type JourneyMemory } from "../lib/journey.ts";
 
 const JOURNEY_ID = "123e4567-e89b-42d3-a456-426614174000";
@@ -19,7 +21,7 @@ function payloadAt(index: number) {
 test("Luna client sends only journeyId and canonical context to the shared encounter route", async () => {
   let sentUrl: RequestInfo | URL | undefined;
   let sentInit: RequestInit | undefined;
-  const expected = composeLunaEncounter("circe_threshold", { spokenLine: "The shape you keep has a cost.", memoryRefs: [] }, []);
+  const expected = composeLunaEncounter("circe_threshold", { spokenLine: VALID_LINE, memoryRefs: [] }, []);
   const result = await requestLunaEncounter(payloadAt(6), {
     minimumPendingMs: 0,
     fetcher: async (input, init) => { sentUrl = input; sentInit = init; return Response.json(expected); },
@@ -35,7 +37,7 @@ test("Luna client sends only journeyId and canonical context to the shared encou
 });
 
 test("generated and server-authored fallback remain explicitly distinguishable", async () => {
-  const generated = composeLunaEncounter("sirens_threshold", { spokenLine: "We can name every answer, but not continue for you.", memoryRefs: [] }, []);
+  const generated = composeLunaEncounter("sirens_threshold", { spokenLine: VALID_LINE, memoryRefs: [] }, []);
   const generatedResult = await requestLunaEncounter(payloadAt(8), { minimumPendingMs: 0, fetcher: async () => Response.json(generated) });
   assert.equal(generatedResult.state, "generated");
   assert.equal(generatedResult.encounter.source, "generated");
@@ -49,7 +51,7 @@ test("generated and server-authored fallback remain explicitly distinguishable",
 test("pending receipts poll with one unchanged payload until one terminal result", async () => {
   const bodies: string[] = [];
   let calls = 0;
-  const generated = composeLunaEncounter("calypso_threshold", { spokenLine: "Rest is real, and the unfinished road remains real.", memoryRefs: [] }, []);
+  const generated = composeLunaEncounter("calypso_threshold", { spokenLine: VALID_LINE, memoryRefs: [] }, []);
   const result = await requestLunaEncounter(payloadAt(11), {
     minimumPendingMs: 0,
     sleep: async () => {},
@@ -64,7 +66,7 @@ test("pending receipts poll with one unchanged payload until one terminal result
 });
 
 test("transport deadline becomes a failed authored outcome and late data cannot replace it", async () => {
-  const late = composeLunaEncounter("circe_threshold", { spokenLine: "Late generated words.", memoryRefs: [] }, []);
+  const late = composeLunaEncounter("circe_threshold", { spokenLine: VALID_LINE, memoryRefs: [] }, []);
   const result = await requestLunaEncounter(payloadAt(6), {
     timeoutMs: 2,
     minimumPendingMs: 0,
@@ -81,7 +83,7 @@ test("transport deadline becomes a failed authored outcome and late data cannot 
 
 test("forged actor, mark, source, asset, and memory references are rejected", () => {
   const context = payloadAt(6).context;
-  const valid = composeLunaEncounter("circe_threshold", { spokenLine: "A valid threshold line.", memoryRefs: [] }, []);
+  const valid = composeLunaEncounter("circe_threshold", { spokenLine: VALID_LINE, memoryRefs: [] }, []);
   for (const forged of [
     { ...valid, actorId: "calypso" },
     { ...valid, mark: "CLIENT MARK" },

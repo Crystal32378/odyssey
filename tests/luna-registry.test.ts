@@ -30,14 +30,17 @@ test("Luna registry fixes exactly three literary thresholds and their presentati
 
 test("Luna output accepts only bounded lines and allowlisted journey references", () => {
   const refs = ["lotus.answer", "cyclops.answer"];
-  assert.deepEqual(validateLunaModelOutput({ spokenLine: "You kept one direction through the change.", memoryRefs: refs }, refs), {
-    spokenLine: "You kept one direction through the change.", memoryRefs: refs,
+  const valid = "One quiet threshold reveals the cost of stopping here, while the road beyond remains entirely yours to choose.";
+  assert.deepEqual(validateLunaModelOutput({ spokenLine: valid, memoryRefs: [refs[0]] }, refs), {
+    spokenLine: valid, memoryRefs: [refs[0]],
   });
   for (const invalid of [
     { spokenLine: "Valid.", memoryRefs: [], mark: "CLIENT MARK" },
     { spokenLine: "One. Two. Three.", memoryRefs: [] },
     { spokenLine: "Invented.", memoryRefs: ["private.fact"] },
     { spokenLine: "Duplicate.", memoryRefs: ["lotus.answer", "lotus.answer"] },
+    { spokenLine: valid, memoryRefs: refs },
+    { spokenLine: "Too few words remain here.", memoryRefs: [] },
   ]) assert.equal(validateLunaModelOutput(invalid, refs), null);
 });
 

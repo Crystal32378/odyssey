@@ -12,6 +12,8 @@ import {
   restoreLunaSession,
   writeLunaSession,
 } from "../lib/luna-session.ts";
+
+const VALID_LINE = "One quiet threshold reveals the cost of stopping here, while the road beyond remains entirely yours to choose.";
 import { createJourneyMemory, ISLANDS, resolveIsland, type JourneyMemory } from "../lib/journey.ts";
 
 const JOURNEY_ID = "123e4567-e89b-42d3-a456-426614174000";
@@ -29,7 +31,7 @@ test("only Circe, Sirens, and Calypso can be explicitly queued", () => {
 
 test("generated, authored-fallback, and failed outcomes preserve distinct session states", () => {
   const cases: LunaOutcome[] = [
-    { state: "generated", encounter: composeLunaEncounter("circe_threshold", { spokenLine: "Generated threshold.", memoryRefs: [] }, []) },
+    { state: "generated", encounter: composeLunaEncounter("circe_threshold", { spokenLine: VALID_LINE, memoryRefs: [] }, []) },
     { state: "authored_fallback", encounter: authoredLunaFallback("circe_threshold") },
     { state: "failed", encounter: authoredLunaFallback("circe_threshold") },
   ];
@@ -45,11 +47,11 @@ test("refresh recovers one settled outcome without replay or conflict", () => {
   const queued = queueLunaEncounter(createLunaSession(JOURNEY_ID), atIsland(8));
   const outcome: LunaOutcome = {
     state: "generated",
-    encounter: composeLunaEncounter("sirens_threshold", { spokenLine: "Recovered chorus.", memoryRefs: [] }, []),
+    encounter: composeLunaEncounter("sirens_threshold", { spokenLine: VALID_LINE, memoryRefs: [] }, []),
   };
   const active = activateLunaEncounter(queued, outcome);
   const restored = restoreLunaSession(JSON.stringify(active), JOURNEY_ID);
-  assert.equal(restored.active?.encounter.spokenLine, "Recovered chorus.");
+  assert.equal(restored.active?.encounter.spokenLine, VALID_LINE);
   assert.equal(restored.recovered, true);
   assert.equal(queueLunaEncounter(restored, atIsland(8)), restored);
 });
@@ -62,7 +64,7 @@ test("leaving a threshold seals it once and makes late outcomes harmless", () =>
   assert.equal(reconciled.pending, null);
   const late = activateLunaEncounter(reconciled, {
     state: "generated",
-    encounter: composeLunaEncounter("circe_threshold", { spokenLine: "Late.", memoryRefs: [] }, []),
+    encounter: composeLunaEncounter("circe_threshold", { spokenLine: VALID_LINE, memoryRefs: [] }, []),
   });
   assert.equal(late, reconciled);
 });
