@@ -40,13 +40,17 @@ Frozen record date: **2026-07-18**. These files support an optional authored Sou
 
 ## Rejected or deferred candidates
 
-### Sea waves with birds loop — Mixkit
+### Divine coastal bird accent — derived from Sea waves with birds loop, Mixkit
 
-- Decision: **REJECT** for runtime use.
-- Reason: the source explicitly contains birds, and the supplied 38.041451-second loop repeats those identifiable calls on every cycle. Removing them would require repair beyond the accepted light-processing boundary.
+- Decision: **KEEP only as one sparse, non-looping Divine accent**. The complete bird-bearing sea loop remains rejected.
 - Original filename: `mixkit-sea-waves-with-birds-loop-1185.wav`.
+- Preserved source master: `assets/audio-sources/mixkit-sea-waves-with-birds-loop-1185.wav`.
 - Original SHA-256: `1be7aa7dcd7d8dd8fec5a30dc27c5acd9d6279a89fd98a31123d90db4035b900`.
-- Original size/format: 6,710,558 bytes; stereo PCM WAV; 44.1 kHz; 16-bit.
+- Original size/format: 6,710,558 bytes; 38.041451 seconds; stereo PCM WAV; 44.1 kHz; 16-bit.
+- Runtime derivative: `public/audio/divine-coastal-bird.wav`.
+- Derivative SHA-256: `613555391136062c0f6e09630350fb57b7c206ef2b5c119c9d6e5da31a54cebd`.
+- Derivative: 264,644 bytes; 1.500000 seconds; stereo PCM WAV; 44.1 kHz; 16-bit.
+- Processing: selected source seconds 31.700–33.200 around one isolated bird-dominant transient; linear gain `0.08` (`-21.94 dB`); 180 ms linear fade-in and fade-out; no EQ, denoising, channel, resampling, compression, pitch, time, reverb, or synthetic processing. The residual surf is reduced to a subordinate level rather than layered as a second ambience.
 - Catalogue and license: the Mixkit sea catalogue and Sound Effects Free License pages above.
 
 ### Wind cold interior — Mixkit

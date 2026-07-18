@@ -3,6 +3,8 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import {
   AMBIENCE_VOLUME,
+  DIVINE_BIRD_SOURCE,
+  DIVINE_BIRD_VOLUME,
   DUCKED_VOLUME,
   SAILING_DURATION_MS,
   SEA_AMBIENCE_SOURCE,
@@ -117,6 +119,21 @@ test("the accepted corrective mix keeps voice first and uses a smooth short fade
   assert.equal(SOUNDSCAPE_FADE_MS, 280);
   assert.ok(DUCKED_VOLUME < AMBIENCE_VOLUME * 0.2);
   assert.ok(SHIP_VOLUME < AMBIENCE_VOLUME);
+});
+
+test("Divine accent is sparse, non-looping, non-stacking, muted, and fail-open", () => {
+  const { controller, layers } = setup();
+  controller.enterJourney();
+  controller.playDivineAccent();
+  const bird = layers.get(DIVINE_BIRD_SOURCE)!;
+  assert.equal(bird.loop, false);
+  assert.equal(bird.volume, DIVINE_BIRD_VOLUME);
+  controller.playDivineAccent();
+  assert.equal(layers.size, 2, "one ambience and one bird instance are reused");
+  assert.ok(bird.pauseCount >= 1);
+  controller.toggleMute();
+  assert.ok(bird.pauseCount >= 2);
+  assert.equal(bird.currentTime, 0);
 });
 
 test("blocked and failed assets fail open without changing product state", async () => {

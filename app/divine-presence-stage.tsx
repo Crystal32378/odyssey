@@ -6,6 +6,7 @@ import {
   type DivineEncounter,
   type DivineTriggerId,
 } from "../lib/divine";
+import { soundscape } from "../lib/soundscape";
 
 export interface DivinePresenceStageProps {
   readonly triggerId: DivineTriggerId;
@@ -35,6 +36,12 @@ export function DivinePresenceStage({
   useEffect(() => {
     stageRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (!terminalEncounter) return;
+    soundscape?.playDivineAccent();
+    return () => soundscape?.stopDivineAccent();
+  }, [terminalEncounter]);
 
   const sourceState = !terminalEncounter
     ? "pending"
@@ -111,7 +118,7 @@ export function DivinePresenceStage({
               </div>
 
               <div className="divine-presence-actions">
-                <button type="button" onClick={onContinue}>
+                <button type="button" onClick={() => { soundscape?.stopDivineAccent(); onContinue(); }}>
                   CONTINUE TO THE SHORE
                 </button>
                 <small>THE ROAD REMAINS YOURS</small>

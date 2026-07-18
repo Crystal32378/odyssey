@@ -33,7 +33,7 @@ test("Divine Presence shows one oracle only after the encounter reaches a termin
   assert.match(source, /THE SIGN GATHERS/);
   assert.match(source, /Authored fallback/);
   assert.match(source, /\{terminalEncounter \? \([\s\S]*<blockquote/);
-  assert.match(source, /\{terminalEncounter \? \([\s\S]*<button type="button" onClick=\{onContinue\}>/);
+  assert.match(source, /\{terminalEncounter \? \([\s\S]*<button type="button" onClick=\{\(\) => \{ soundscape\?\.stopDivineAccent\(\); onContinue\(\); \}\}>/);
   assert.match(source, /!terminalEncounter \|\| event\.key !== "Escape"/);
   assert.match(styles, /\.divine-oracle-frame \{ min-height:/);
   assert.match(styles, /\.divine-presence-actions \{[^}]*divine-actions-enter/);
@@ -86,4 +86,11 @@ test("Divine Presence remains complete on mobile and under reduced motion", () =
   assert.match(styles, /\.divine-portrait \{ min-height: 55svh; height: 55svh; \}/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.divine-kicker/);
   assert.match(styles, /\.divine-portrait img \{ transition: none !important; \}/);
+});
+
+test("a settled Divine Presence owns one fail-open coastal accent for its mounted lifetime", () => {
+  assert.match(source, /if \(!terminalEncounter\) return;[\s\S]*soundscape\?\.playDivineAccent\(\)/);
+  assert.match(source, /return \(\) => soundscape\?\.stopDivineAccent\(\)/);
+  assert.match(source, /soundscape\?\.stopDivineAccent\(\); onContinue\(\)/);
+  assert.doesNotMatch(source, /new Audio|<audio/);
 });

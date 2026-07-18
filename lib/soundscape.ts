@@ -1,11 +1,13 @@
 export const SOUNDSCAPE_PREFERENCE_KEY = "odyssey.soundscape.muted.v1";
 export const SEA_AMBIENCE_SOURCE = "/audio/aegean-sea-ambience.mp3";
 export const SAILING_SOURCE = "/audio/wooden-ship-sailing.wav";
+export const DIVINE_BIRD_SOURCE = "/audio/divine-coastal-bird.wav";
 export const SAILING_DURATION_MS = 4_000;
 
 export const AMBIENCE_VOLUME = 0.095;
 export const DUCKED_VOLUME = 0.015;
 export const SHIP_VOLUME = 0.075;
+export const DIVINE_BIRD_VOLUME = 0.1;
 export const SOUNDSCAPE_FADE_MS = 280;
 const FADE_STEPS = 8;
 const FADE_STEP_MS = 35;
@@ -37,6 +39,7 @@ export class SoundscapeController {
   private readonly preferences?: PreferenceStore;
   private ambience: AudioLayer | null = null;
   private ship: AudioLayer | null = null;
+  private divineBird: AudioLayer | null = null;
   private active = false;
   private muted = false;
   private voiceActive = false;
@@ -69,6 +72,7 @@ export class SoundscapeController {
     this.active = false;
     this.voiceActive = false;
     this.stopSailing();
+    this.stopDivineAccent();
     this.stopFade();
     this.ambience?.pause();
     if (this.ambience) this.ambience.currentTime = 0;
@@ -82,6 +86,7 @@ export class SoundscapeController {
       this.stopFade();
       if (this.ambience) { this.ambience.muted = true; this.ambience.pause(); }
       this.stopSailing();
+      this.stopDivineAccent();
     } else if (this.active) {
       if (this.ambience) this.ambience.muted = false;
       this.startAmbience(true);
@@ -119,6 +124,21 @@ export class SoundscapeController {
     if (changed) this.notify();
   }
 
+  playDivineAccent() {
+    this.stopDivineAccent();
+    if (!this.active || this.muted) return;
+    const bird = this.divineBird || this.makeLayer(DIVINE_BIRD_SOURCE, false, DIVINE_BIRD_VOLUME);
+    this.divineBird = bird;
+    bird.currentTime = 0;
+    bird.muted = false;
+    void bird.play().catch(() => this.stopDivineAccent());
+  }
+
+  stopDivineAccent() {
+    this.divineBird?.pause();
+    if (this.divineBird) this.divineBird.currentTime = 0;
+  }
+
   private startAmbience(fadeIn = true) {
     const ambience = this.ambience || this.makeLayer(SEA_AMBIENCE_SOURCE, true, fadeIn ? 0 : AMBIENCE_VOLUME);
     this.ambience = ambience;
@@ -140,6 +160,7 @@ export class SoundscapeController {
     layer.onerror = () => {
       layer.pause();
       if (layer === this.ship) this.stopSailing();
+      if (layer === this.divineBird) this.stopDivineAccent();
     };
     if (!loop) layer.onended = () => this.stopSailing();
     return layer;

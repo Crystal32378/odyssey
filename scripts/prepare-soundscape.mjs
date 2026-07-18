@@ -70,6 +70,12 @@ writeWave(
   readPcm16Wave(path.join(sourceDir, "mixkit-wooden-ship-on-the-sea-1187.wav")),
   { startSeconds: 8, durationSeconds: 4, gain: 0.25, fadeSeconds: 0.35 },
 );
+writeWave(
+  path.join(root, "public", "audio", "divine-coastal-bird.wav"),
+  readPcm16Wave(path.join(sourceDir, "mixkit-sea-waves-with-birds-loop-1185.wav")),
+  { startSeconds: 31.7, durationSeconds: 1.5, gain: 0.08, fadeSeconds: 0.18 },
+);
 
 console.log("Prepared work/soundscape/ship-sailing-master.wav (8–12s excerpt, -12.04 dB gain, 350ms linear fades).");
+console.log("Prepared public/audio/divine-coastal-bird.wav (31.7–33.2s excerpt, -21.94 dB gain, 180ms linear fades).");
 console.log("Encode commands are documented in docs/audio-assets.md so CoreAudio output remains reproducible.");
