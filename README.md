@@ -225,6 +225,36 @@ The foundation available at that moment included:
 
 **Current Build Week checkpoint:** Draft PR #12 records the explicit `gpt-5.6-sol` Homer integration, complete island-art mapping, Ending Ritual, accepted Gate 3.2 voyage/arrival presentation, the Gate 4 Divine Presence Layer, and Gate 5A Penelope Recognition. Gate 4.1 at `0c84789` makes the Divine waiting state neutral and reveals exactly one generated oracle or authored fallback; Crystal accepted its reading pace on 2026-07-17. Gate 5A at `9141d3d` adds a silent, authored Penelope ritual only after a completed Ithaca Journey Card, never on the Calypso ending, without a Luna request or new journey state. The isolated `fab78ad` refinement makes the ritual full-bleed and frameless while keeping Restart secondary and every product boundary unchanged. The checkpoint passed 94 automated tests, lint with no errors, production build, desktop/mobile/reduced-motion runtime review, asset-failure review, and public Preview smoke tests with zero console errors. Public Preview Version `8f36be04-4f4b-43d5-a8a9-c9e23fce3dc4` is tagged `gate5a-frameless-fab78ad`; Gate 5A Crystal Acceptance remains pending. Luna thresholds, Luna receipts, voice, and soundscape remain intentionally deferred. These remain branch-and-Preview claims until the PR is approved and merged.
 
+## Future directions
+
+The following ideas are product directions, not claims about the current public Preview or the Build Week submission build.
+
+### Relational gods
+
+Future journeys could turn divine encounters into relationships that accumulate over time. A traveler might choose to honor, worship, resist, or defy a god. Repeated devotion could allow that god to become a protecting presence later in the route, while repeated defiance could make the journey longer, more difficult, or more exposed to that god’s power.
+
+This should not become a generic favor meter or a simple reward-and-punishment system. Each divine relationship should reflect the values, temperament, and authority of that particular god. Protection should carry a cost, and resistance should remain a meaningful choice rather than an error.
+
+### Embodied Luna characters
+
+Circe, the Sirens, and Calypso could gain greater physical presence through restrained animation. Breath, gaze, a small turn of the head, or subtle movement in hair and fabric could make these women feel present at the threshold rather than illustrated beside the text.
+
+The aim would not be cinematic spectacle or game-character performance. Movement should deepen recognition and tension while preserving the quiet visual language of Odyssey.
+
+### Live Conversation Mode
+
+A future optional live mode could allow travelers to speak with Sol, Terra, and Luna instead of typing. The traveler could answer a dilemma aloud, hear a character respond in real time, and continue a bounded spoken exchange.
+
+Each voice would remain limited by its narrative role:
+
+- **Sol** could guide the journey, clarify Journey Memory, and speak through Homer’s narrative presence.
+- **Terra** could let a god question, warn, challenge, or respond during a divine encounter, informed by the traveler’s accumulated history with that god.
+- **Luna** could support more intimate threshold conversations with Circe, the Sirens, and Calypso, responding to what the traveler actually says.
+
+Live conversation should not turn the characters into general-purpose companions available at every moment. It should open only where each character has literary authority, remain bounded in time or turns, and write meaningful outcomes back into Journey Memory.
+
+Together, these directions would allow Odyssey to evolve from an interactive reading experience into a living oral journey without surrendering literary structure.
+
 ## Security
 
 Never commit API keys or local environment files. Keep `.env.local` and all secrets outside version control.
