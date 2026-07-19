@@ -1,0 +1,132 @@
+{
+  "commit": "ithaca-early-sea-fade",
+  "url": "http://localhost:4173",
+  "viewport": "mobile",
+  "globalAudio": {
+    "persistedMute": null,
+    "snapshot": {
+      "muted": false,
+      "active": true,
+      "voiceActive": false,
+      "sailing": false
+    },
+    "sea": {
+      "paused": false,
+      "ended": false,
+      "muted": false,
+      "volume": 0.082,
+      "currentTime": 1.213043,
+      "playCalls": 1,
+      "playResolved": 1,
+      "playRejected": []
+    }
+  },
+  "divine": {
+    "count": 1,
+    "loop": false,
+    "pausedAfterAll": true,
+    "evidence": [
+      {
+        "triggerId": "cyclops_departure",
+        "actorId": "poseidon",
+        "paused": false,
+        "muted": false,
+        "volume": 0.22,
+        "currentTime": 0.279171,
+        "playCalls": 1,
+        "playResolved": 1,
+        "playRejected": []
+      },
+      {
+        "triggerId": "circe_threshold",
+        "actorId": "hermes",
+        "paused": false,
+        "muted": false,
+        "volume": 0.22,
+        "currentTime": 0.301619,
+        "playCalls": 2,
+        "playResolved": 2,
+        "playRejected": []
+      },
+      {
+        "triggerId": "thrinacia_arrival",
+        "actorId": "helios",
+        "paused": false,
+        "muted": false,
+        "volume": 0.22,
+        "currentTime": 0.301554,
+        "playCalls": 3,
+        "playResolved": 3,
+        "playRejected": []
+      },
+      {
+        "triggerId": "thrinacia_departure",
+        "actorId": "zeus",
+        "paused": false,
+        "muted": false,
+        "volume": 0.22,
+        "currentTime": 0.300354,
+        "playCalls": 4,
+        "playResolved": 4,
+        "playRejected": []
+      },
+      {
+        "triggerId": "calypso_departure",
+        "actorId": "ino",
+        "paused": false,
+        "muted": false,
+        "volume": 0.22,
+        "currentTime": 0.309463,
+        "playCalls": 5,
+        "playResolved": 5,
+        "playRejected": []
+      },
+      {
+        "triggerId": "ithaca_threshold",
+        "actorId": "athena",
+        "paused": false,
+        "muted": false,
+        "volume": 0.22,
+        "currentTime": 0.308488,
+        "playCalls": 6,
+        "playResolved": 6,
+        "playRejected": []
+      }
+    ]
+  },
+  "penelope": {
+    "arrival": {
+      "sea": 0,
+      "loomCount": 0
+    },
+    "ithacaStarted": true,
+    "active": {
+      "count": 1,
+      "loop": false,
+      "paused": false,
+      "muted": false,
+      "volume": 0.14,
+      "currentTime": 0.541643,
+      "playCalls": 1,
+      "playResolved": 1,
+      "playRejected": [],
+      "sea": 0,
+      "guard": "played"
+    },
+    "completed": {
+      "count": 1,
+      "paused": true,
+      "sea": 0,
+      "replay": false
+    },
+    "restartGuardCleared": true
+  },
+  "calypso": {
+    "loomLayersWithoutPenelope": 0
+  },
+  "events": {
+    "consoleErrors": [],
+    "exceptions": [],
+    "failedRequests": []
+  }
+}

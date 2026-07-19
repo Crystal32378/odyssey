@@ -45,7 +45,7 @@ export async function readJsonWithLimit(request: Request, maxBytes = DEFAULT_MAX
   }
 }
 
-export function isRateLimited(request: Request, namespace: "homer" | "audio", now = Date.now()): boolean {
+export function isRateLimited(request: Request, namespace: "homer" | "audio" | "divine" | "luna", now = Date.now()): boolean {
   pruneBuckets(now);
   const key = `${namespace}:${clientKey(request)}`;
   const current = buckets.get(key);

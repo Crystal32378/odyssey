@@ -1,0 +1,50 @@
+{
+  "consoleErrors": [],
+  "exceptions": [],
+  "failedRequests": [],
+  "entry": {
+    "layers": [
+      {
+        "src": "http://localhost:4173/audio/aegean-sea-ambience.mp3",
+        "loop": true,
+        "paused": false,
+        "volume": 0.095
+      }
+    ],
+    "label": "MUTE",
+    "control": {
+      "width": 68,
+      "height": 44
+    },
+    "island": true,
+    "overflow": false
+  },
+  "muted": {
+    "label": "UNMUTE",
+    "pressed": "true",
+    "paused": true,
+    "stored": "true"
+  },
+  "sailing": {
+    "layers": [
+      {
+        "src": "http://localhost:4173/audio/aegean-sea-ambience.mp3",
+        "loop": true,
+        "paused": false
+      },
+      {
+        "src": "http://localhost:4173/audio/wooden-ship-sailing.wav",
+        "loop": false,
+        "paused": false
+      }
+    ],
+    "stage": true,
+    "overflow": false
+  },
+  "ducked": {
+    "count": 3,
+    "sea": 0.015,
+    "voicePaused": false
+  },
+  "restored": 0.095
+}
