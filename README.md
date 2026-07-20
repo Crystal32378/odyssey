@@ -37,6 +37,8 @@ https://odyssey-preview.crystalys-chang.workers.dev
 
 The judging Preview is deployed from the reviewed Build Week checkpoint identified below. PR [#12](https://github.com/Crystal32378/odyssey/pull/12), immutable tags, and the evidence record preserve the exact implementation and merge history.
 
+The public Build Week demo is available on [YouTube](https://youtu.be/14uw02cCzM0). It runs for 2 minutes 41 seconds and includes English narration explaining the product, Codex, and GPT-5.6.
+
 ## Run locally
 
 ### Prerequisites
@@ -236,7 +238,7 @@ The foundation available at that moment included:
 
 **Boundary maintenance:** PR #8 was merged at `6f74f9fde53ba53e2483f2168fcd75751a380b7e`, fourteen minutes after the submission period began. It adds transient island-image retry and recovery behavior. It may be cited as Build Week Preview reliability evidence, but not as evidence that Odyssey was meaningfully extended.
 
-**Current Build Week product checkpoint:** `ba90bc9`, tagged `submission-p0-ba90bc9`, on PR #12.
+**Current Build Week product checkpoint:** `ba90bc9`, tagged `submission-p0-ba90bc9`. PR #12 was merged into `main` via normal merge commit `03191872`, preserving the complete Build Week gate history and evidence chain.
 
 - Gate 4.1 at `0c84789` reveals exactly one generated Terra oracle or authored deity fallback. Crystal accepted its reading pace on 2026-07-17.
 - Gate 5A at `9141d3d`, refined at `fab78ad`, adds the authored, non-generated Penelope recognition only after an Ithaca Journey Card and never on the Calypso ending. Crystal accepted the full-bleed ritual on 2026-07-18. Gate 5A itself introduced no Luna call or audio; the later optional Soundscape does not change that provenance.
@@ -246,7 +248,7 @@ The foundation available at that moment included:
 
 The checkpoint passed **148 automated tests**, lint with zero errors (six pre-existing image warnings), the production build, and Chrome desktop/mobile runtime review with zero unexpected console errors, network failures, or horizontal overflow. Gate-specific evidence also covers Firefox, Safari, reduced motion, refresh/retry recovery, receipt deduplication, late responses, asset failure, Calypso exclusion, and Ithaca ordering.
 
-On 2026-07-19 the public Preview returned HTTP 200 with deployment version `a0dca440-0f23-45c8-a85d-8760d724a30a`, served the final P0 entry copy, and served byte-complete Soundscape assets matching the recorded SHA-256 hashes. These are branch-and-Preview claims until PR #12 is approved and merged.
+On 2026-07-19 the public Preview returned HTTP 200 with deployment version `a0dca440-0f23-45c8-a85d-8760d724a30a`, served the final P0 entry copy, and served byte-complete Soundscape assets matching the recorded SHA-256 hashes. The reviewed implementation was merged into `main` through PR #12 at `03191872`.
 
 ## Future directions
 

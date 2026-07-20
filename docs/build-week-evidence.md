@@ -102,17 +102,17 @@ These are required for shipping but are not separate product pillars:
 |---|---|---|---|
 | Working project | Public Preview; no payment, special permission, or judge API key | Preview URL, smoke tests, deployment version | Verified judging Preview; final monitoring remains |
 | Category | Apps for Your Life | Devpost field and final copy | Locked |
-| Project description | Separate inspiration, problem, operation, build, challenges, learning, baseline, Build Week additions, and next steps | Devpost copy checked against repo | Pending |
-| Demo video | Public YouTube, no more than 3 minutes, audible English narration or complete English translation | URL, duration, transcript, timestamps | Pending |
-| Demo content | Show the working project and specifically explain Codex and GPT-5.6 use | Shot list and timestamp map | Pending |
+| Project description | Separate inspiration, problem, operation, build, challenges, learning, baseline, Build Week additions, and next steps | Devpost copy checked against repo | Verified against the merged repository and final Devpost copy |
+| Demo video | Public YouTube, no more than 3 minutes, audible English narration or complete English translation | URL, duration, transcript, timestamps | Public at <https://youtu.be/14uw02cCzM0>; accepted V3.2 runtime 2:41.167 |
+| Demo content | Show the working project and specifically explain Codex and GPT-5.6 use | Shot list and timestamp map | Verified in the accepted V3.2 cut |
 | Repository | Public with an appropriate license, or private with designated judge access | Repo visibility and license | Public; MIT source license and separate artwork-rights boundary recorded |
-| README | Setup, environment, run, test, architecture, GPT-5.6, Codex, decisions, baseline, additions, limitations, and demo path | README audit | Updated through Gate 5B, Soundscape, and P0; final demo URL remains pending |
+| README | Setup, environment, run, test, architecture, GPT-5.6, Codex, decisions, baseline, additions, limitations, and demo path | README audit | Updated through Gate 5B, Soundscape, P0, merge, and final demo URL |
 | Codex evidence | Submit `/feedback` Session ID from the principal implementation thread | Session ID and representative work links | Recorded: `019f5fbf-c01b-7211-8d17-c7556d6f0d6f` |
-| Project media | Thumbnail and a small gallery that explains the product | Final image list and source rights check | First-cut package produced; final Deck, Gallery, and Demo acceptance pending |
+| Project media | Thumbnail and a small gallery that explains the product | Final image list and source rights check | Final 8-page Deck, 15-image Gallery, and V3.2 Demo accepted by Crystal |
 | Truthful claims | Pre-existing work cannot be presented as Build Week work | This ledger plus PR and commit timestamps | In force |
-| Judging availability | Keep the public judging build working through 2026-08-05 | Deployment monitoring record | Pending |
+| Judging availability | Keep the public judging build working through the judging period ending 2026-08-10 | Deployment monitoring record | Pending |
 | Additional information | Submitter, residence, representative, team, track, URLs, testing instructions | Final submission checklist | Pending |
-| Team eligibility | Crystal is expected representative; Kim requires real documented contribution if she joins | Team decision and contribution record | Pending |
+| Team eligibility | Crystal is the representative; Kim contributed usability testing and P0 clarity feedback | Team decision and contribution record | Kim joined the Devpost team |
 | Support disclosure | General-purpose API credits or subscription access not provided specifically for Odyssey are not project support under the cited clause | Official Build Week Discord confirmation and preserved Devpost discussion, 2026-07-14 | Closed |
 
 ## 5. Change evidence log
@@ -141,6 +141,12 @@ Add one row for every meaningful competition-period change.
 - **`/feedback` Session ID:** `019f5fbf-c01b-7211-8d17-c7556d6f0d6f`
 - **Recorded:** 2026-07-17 after the Gate 4.1 checkpoint and independent CLI credential separation
 - **Why this thread is representative:** It contains the majority of Odyssey's Build Week planning, core implementation, testing, debugging, Cloudflare Preview deployment, evidence maintenance, and the Gate 4.1 handoff. The isolated Cursor CLI session was not used as the primary record because it had not yet performed Luna or other paid engineering work when this ID was captured.
+
+### Supporting implementation session
+
+- **Cursor Codex CLI Session ID:** `019f7079-441b-7be1-a750-280ee9e37c87`
+- **Scope:** Gate 5B Luna threshold implementation, Soundscape engineering, tests, and browser verification
+- **Submission use:** Supporting evidence only. The Devpost required `/feedback` field remains the principal Desktop Session ID above.
 
 Do not use a scope-only, checklist-only, read-only review, or isolated maintenance session as the primary `/feedback` evidence.
 
@@ -174,7 +180,7 @@ Every claim must be supported by code and a testable product path.
 | Journey Memory grounding | Bounded Homer payload, eligible Divine references, and at most one supplied Luna memory reference | Implemented and tested without a cross-journey profile |
 | failure and fallback behavior | Homer client retry paths; authored per-deity Divine and per-character Luna fallbacks | Implemented, idempotent, late-response safe, and fail-open |
 | actual Preview model verification | Sol verification, generated Terra receipts, and generated Luna threshold paths | Verified during gate-specific public Preview QA |
-| visible demo behavior | Homer cross-island witness, voyage/arrival ritual, generated Divine and Luna stages, authored Penelope return | Public Preview verified; final demo acceptance pending |
+| visible demo behavior | Homer cross-island witness, voyage/arrival ritual, generated Divine and Luna stages, authored Penelope return | Public Preview and accepted V3.2 demo verified |
 
 ## 8. Gate 4 Divine Presence verification
 
@@ -310,9 +316,9 @@ No target-scope or future item may be written as a current capability.
 - [x] key product, design, and engineering decisions documented
 - [x] GPT-5.6 integration meaningful and verifiable
 - [x] principal `/feedback` Session ID recorded: `019f5fbf-c01b-7211-8d17-c7556d6f0d6f`
-- [ ] public YouTube demo is no more than 3 minutes
-- [ ] audible English narration explains the product, Codex, and GPT-5.6
-- [ ] demo, README, repository, gallery, and Devpost copy make consistent claims
+- [x] public YouTube demo is no more than 3 minutes: <https://youtu.be/14uw02cCzM0>
+- [x] audible English narration explains the product, Codex, and GPT-5.6
+- [x] demo, README, repository, gallery, and Devpost copy make consistent claims
 - [ ] final submission completed during Taipei daytime on July 21
 - [ ] Preview maintained through the judging period
 
